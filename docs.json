@@ -50,7 +50,9 @@
       {
         "group": "Python SDK",
         "icon": "python",
-        "pages": []
+        "pages": [
+          "sdk/quickstart"
+        ]
       },
       {
         "group": "CLI",
