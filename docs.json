@@ -80,7 +80,8 @@
         "pages": [
           "dashboard/overview",
           "dashboard/projects",
-          "dashboard/experiments-runs"
+          "dashboard/experiments-runs",
+          "dashboard/charts"
         ]
       },
       {
