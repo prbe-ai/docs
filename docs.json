@@ -42,7 +42,8 @@
           "tracking/artifacts",
           "tracking/snapshots",
           "tracking/trajectories",
-          "tracking/notes"
+          "tracking/notes",
+          "tracking/papers"
         ]
       },
       {

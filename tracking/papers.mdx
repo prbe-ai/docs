@@ -1,0 +1,80 @@
+---
+title: "Papers"
+description: "Record the literature a research project was built from — what each paper says, the repo read alongside it, and where the two disagree."
+icon: "book-open"
+---
+
+A literature review is research work, and it leaves as little behind as a training run does unless somebody records it. `probe paper` is where it goes.
+
+Record **during** a review and again at its end — not afterwards from memory.
+
+```bash
+probe paper add --project folding \
+  --source https://arxiv.org/abs/2106.09685 \
+  --authors "Hu et al." \
+  --summary @lora-summary.md \
+  --repo https://github.com/microsoft/LoRA \
+  --discrepancies @lora-vs-repo.md \
+  --tag adapters --tag peft \
+  --via <paper-id> --via-provenance provider_citation \
+  --via-reason "cited as the baseline this method improves on"
+```
+
+| Field | What goes in it |
+|---|---|
+| `--source` / `--url` | The paper URL or a local file path. Required |
+| `--authors` | Free text: `"Vaswani et al."` |
+| `--summary` | **The paper's main idea, in your words.** `@file.md` works |
+| `--repo` | The repository you read alongside it |
+| `--discrepancies` | What the repo does that the paper does not say |
+| `--tag` | Concept tags, repeatable |
+
+`--discrepancies` is the field that earns the entity. "The paper says warmup is linear; the repo's scheduler is cosine with a floor" is the kind of thing that costs a week when it is rediscovered, and nothing else in a review captures it.
+
+## Provenance: how you got there
+
+```bash
+--via <paper-id>            # the paper you followed to this one
+--via none                  # you came to this one directly
+--via-provenance observed_call | provider_citation | human | inferred
+--via-reason "one sentence on why that paper led to this one"
+```
+
+That chain is readable back as a graph:
+
+```bash
+probe paper edges --project folding
+```
+
+Omit `--via` only when you genuinely cannot say. A review whose paths are recorded can be re-walked; one without them is a bag of citations.
+
+## Managing them
+
+```bash
+probe paper list --project folding --tag adapters     # newest first
+probe paper update <id> --summary @revised.md
+probe paper tag <id> peft --remove adapters
+probe paper remove <id>
+```
+
+`update` leaves omitted fields untouched. `""` clears a field — except `--title` and `--source`, which are required and reject an empty value.
+
+## In the dashboard
+
+A project whose kind is `research` leads with **Papers**, right after Overview, and each row opens its own page at `/papers/{id}`.
+
+The page carries the captured **Summary** and **Repo vs paper** documents as full Markdown, and a **Paper** tab holding the provider-extracted abstract. Title, authors, publication year, venue and category chips are filled in from extraction where it succeeds; a pending extraction shows a spinner for about a minute and then goes quiet rather than pretending to still be working.
+
+<Note>
+The Papers tab is **read-only**. Recording a paper is an act by whoever did the reading — through the CLI or an agent session — exactly as attaching a subproject is. An empty tab names the capture path rather than offering a form.
+</Note>
+
+## Finding papers to record
+
+Agents have a `find_papers` tool over 40M+ abstracts, with `search`, `read` and `similar` modes.
+
+<Tip>
+`find_papers` wants **natural language**, not a keyword bag. A question-shaped description retrieves substantially more relevant papers than a bag of terms. Its `categories` filter is an AND, and its score rises as relevance falls — read the results, do not rank by the number.
+</Tip>
+
+See [the MCP reference](/agents/mcp).
