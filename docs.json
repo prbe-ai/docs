@@ -59,7 +59,8 @@
         "group": "CLI",
         "icon": "terminal",
         "pages": [
-          "cli/overview"
+          "cli/overview",
+          "cli/auth"
         ]
       },
       {

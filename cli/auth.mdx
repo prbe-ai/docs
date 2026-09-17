@@ -1,0 +1,125 @@
+---
+title: "Authentication"
+description: "Device flow, tokens and scopes, named contexts, and how a credential is actually resolved."
+icon: "key"
+---
+
+## Signing in
+
+```bash
+probe login
+```
+
+Bare `probe login` runs the browser handoff (RFC 8628 device flow with PKCE): you approve in the dashboard, and there is no token to see or paste. The result is written to `~/.config/probe/config.json`.
+
+```bash
+probe whoami            # the current principal
+```
+
+<Tip>
+You can skip `probe login` entirely. The first `client.run()` or `probe run start` with no token triggers the same browser approval inline on a TTY and persists the result. `PROBE_AUTO_LOGIN=0` disables that; headless and CI keep a clean `AuthError` and should set `PROBE_TOKEN`.
+</Tip>
+
+### Without a browser
+
+```bash
+probe login --token probe_pat_xxxxxxxx              # verified against GET /v1/me
+probe login --endpoint-only --base-url https://api.example.internal
+probe login --ingest-token ... --hmac-secret ...    # passive-push credentials
+```
+
+## Tokens
+
+```bash
+probe token create --name ci-bot --scope read --scope write
+probe token create --name reader --scope read --no-browser
+probe token list                                    # secrets are never shown
+probe token revoke <token_prefix>
+```
+
+| Scope | Grants |
+|---|---|
+| `read` | Every read |
+| `write` | Creating and amending |
+| `delete` | Permanent deletes — projects, runs, artifacts, sub-notes |
+| `admin` | Never granted by `token create` |
+
+Omitting `--scope` requests read + write + delete. A token can never exceed the scopes your own role confers.
+
+<Warning>
+**Minting deliberately requires a human in a browser** — a leaked token must not be able to mint more tokens. `token create` prints a URL and a code and waits for approval.
+
+The secret is printed **once** and never stored. Copy it then.
+</Warning>
+
+Revoking a teammate's token needs the dashboard.
+
+## Named contexts
+
+One machine can hold several accounts, `kubectl`-style. Exactly one is active.
+
+```bash
+probe context list                     # credentials redacted
+probe context show staging             # how it resolves, environment overrides included
+probe context use staging
+probe context delete staging
+
+probe login --context staging          # sign in under a named context
+```
+
+A context carries the endpoint, its credentials, and its **anchors** — the active workspace and project that scope commands like `probe run start`.
+
+<Warning>
+The same project name can exist in two tenants. Under the wrong context a list command returns the *other* tenant's same-named copy instead of erroring, so a healthy project can read as wiped. **Check `probe context list` before concluding anything is missing.**
+</Warning>
+
+## The MCP credential
+
+The MCP server is read-only and prefers a separately minted read-only token.
+
+```bash
+probe mcp status            # where the credential comes from, and whether it still works
+probe mcp token set <token> # store it — re-run to rotate; it replaces, never appends
+probe mcp token unset
+probe mcp headers           # the Authorization header as JSON
+probe mcp env               # the export line, for clients that only read the environment
+```
+
+It falls back to `PROBE_TOKEN` for local development, and exposes no mutation tools either way.
+
+## Resolution order
+
+Credentials in the **environment outrank the config file**. In order:
+
+```
+PROBE_TOKEN            user token   → /v1
+PROBE_MCP_TOKEN        read-only    → MCP
+PROBE_INGEST_TOKEN     ingest token → /ingest
+PROBE_SERVICE_TOKEN    service      → machine callers
+↓
+~/.config/probe/config.json   (the active context)
+```
+
+Plus `PROBE_BASE_URL` for the endpoint and `PROBE_HMAC_SECRET` for optional body signing.
+
+<Warning>
+This is why a sign-out can look like it did not work. `probe logout` revokes the device token and clears the file — but an exported `PROBE_TOKEN` still authenticates, and no command can unset a variable in your parent shell. `probe doctor` and the wizard both name any they find.
+</Warning>
+
+## Signing out
+
+```bash
+probe logout
+```
+
+Stops imports, **revokes** the calling token (not merely forgets it), and clears local config. Session capture stops so it cannot keep uploading to the account you just left.
+
+## In CI
+
+```bash
+export PROBE_TOKEN=probe_pat_xxxxxxxx
+export PROBE_BASE_URL=https://api.research.prbe.ai
+export PROBE_AUTO_LOGIN=0
+```
+
+Mint the token with `--scope read --scope write` unless the job genuinely needs to delete things.
