@@ -90,7 +90,9 @@
       {
         "group": "Integrations and imports",
         "icon": "right-left",
-        "pages": []
+        "pages": [
+          "integrations/overview"
+        ]
       },
       {
         "group": "Deploy and operate",
