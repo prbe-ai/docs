@@ -67,7 +67,9 @@
       {
         "group": "Coding agents",
         "icon": "robot",
-        "pages": []
+        "pages": [
+          "agents/overview"
+        ]
       },
       {
         "group": "Dashboard",

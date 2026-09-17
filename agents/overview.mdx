@@ -1,0 +1,110 @@
+---
+title: "Coding agents"
+sidebarTitle: "Overview"
+description: "Two plugins, one switch — what your coding agent gains when Probe is installed."
+icon: "robot"
+---
+
+Most ML work now happens in a conversation with an agent. The agent plugin makes that conversation part of the record rather than something that evaporates when the terminal closes.
+
+```bash
+npx probe-research install
+```
+
+Supported hosts: **Claude Code**, **Codex**, **pi**.
+
+## Two plugins, two decisions
+
+They are separate because they are separate consent decisions.
+
+<CardGroup cols={2}>
+  <Card title="probe-research" icon="magnifying-glass">
+    **Tracking.** Skills that teach the agent the experiment workflow, and a read-only MCP server it searches your lab's history with.
+
+    Writes go through the `probe` CLI, never through MCP.
+  </Card>
+  <Card title="probe-research-tap" icon="message">
+    **Session capture.** Streams this device's sessions to the team knowledgebase: your prompts, the agent's replies, and the shell commands you run.
+
+    Per-device, disclosed twice before it starts, off at any time.
+  </Card>
+</CardGroup>
+
+## What the agent can do with them
+
+<AccordionGroup>
+  <Accordion title="Search what the team already did" icon="magnifying-glass">
+    Before proposing a direction, the agent can check whether somebody already tried it — across runs, notes, sessions, papers and connected sources. That is the read half, and it is available even with writes turned off.
+  </Accordion>
+  <Accordion title="Record work as it happens" icon="pen">
+    Create the project and experiment explicitly, open runs, route files to artifacts and numbers to metrics, write decisions into notes, and close with the real lifecycle outcome. At the moment it happens — not summarised at the end of the session.
+  </Accordion>
+  <Accordion title="Instrument a script before it costs GPU hours" icon="code">
+    `/instrument-code` wires `probe.init` and `probe.log` into a trainer, an eval or a sweep, including trainers that already have their own tracker.
+  </Accordion>
+  <Accordion title="Show you where the work stands" icon="chart-gantt">
+    `/visualize-progress` renders the tracked state, the gaps, and the arc as one timeline with the next action named — every line read back from Probe, never from the session's own memory.
+  </Accordion>
+</AccordionGroup>
+
+## The switch
+
+One control governs the whole conversation.
+
+```
+/probe on      reads and writes
+/probe read    search yes, record no
+/probe off     no calls at all
+
+/probe         advance one step (on ↔ read)
+/probe status  print it, change nothing
+```
+
+<Note>
+**Only the researcher moves the switch.** Typed bare by you it toggles between `on` and `read`; `off` is not on that cycle and is reached only by typing it. An agent invoking the skill itself loads guidance and never changes the state.
+</Note>
+
+From a shell:
+
+```bash
+probe session status            # what this conversation is doing, and how that was decided
+probe session state read        # set it for this conversation
+probe session default on        # the device-wide default for new sessions
+```
+
+`probe session status` returns the full decision, including which default applied and whether the capture daemon is actually running — so "tracking is on" and "anything is being recorded" can be told apart.
+
+## What each surface is allowed to do
+
+| Surface | Reads | Writes |
+|---|---|---|
+| MCP server | yes | **never** — there are no mutation tools |
+| `probe` CLI | yes | yes |
+| Skills | — | they instruct the agent to use the CLI |
+
+The read/write split is structural, not a policy setting. An agent with only the MCP server cannot change anything.
+
+## The managed rules block
+
+The install writes a managed Probe block into each selected agent's global instruction file, prompting it to search Probe and track research there. Everything outside the block is left alone.
+
+```bash
+probe agent-rules refresh       # rewrite the block when it is older than this CLI
+```
+
+Turn it off from the wizard's [Settings](/wizard/settings) screen, or with `--no-agent-rules`.
+
+<CardGroup cols={2}>
+  <Card title="Skills" icon="wand-magic-sparkles" href="/agents/skills">
+    Every skill, when it fires, and what it does.
+  </Card>
+  <Card title="MCP reference" icon="plug" href="/agents/mcp">
+    Six tools, token budgets, pagination, entity views.
+  </Card>
+  <Card title="Session capture" icon="message" href="/agents/capture">
+    What leaves the machine, and how to stop it.
+  </Card>
+  <Card title="Status line" icon="bars" href="/agents/statusline">
+    The tracked/untracked indicator in Claude Code.
+  </Card>
+</CardGroup>
