@@ -68,7 +68,8 @@
         "group": "Coding agents",
         "icon": "robot",
         "pages": [
-          "agents/overview"
+          "agents/overview",
+          "agents/skills"
         ]
       },
       {

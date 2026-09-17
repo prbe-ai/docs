@@ -1,0 +1,113 @@
+---
+title: "Skills"
+description: "Every skill the plugin ships, when it fires, and what it makes the agent do."
+icon: "wand-magic-sparkles"
+---
+
+Skills are instructions the agent loads when a situation matches. Most fire on their own; all of them can be invoked by name.
+
+## `/probe` — the switch
+
+The one skill that changes state rather than behaviour.
+
+```
+/probe on      reads and writes
+/probe read    search yes, record no
+/probe off     no calls at all
+/probe         advance one step (on ↔ read)
+/probe status  print it, change nothing
+```
+
+States are stored as `full` / `read-only` / `off` — the older spelling, kept because every other copy of the client on the machine reads those files. Both spellings are accepted wherever a state is typed.
+
+<Note>
+This skill does not track anything. It only moves the switch — and only when you move it.
+</Note>
+
+## `/track-work` — the whole arc
+
+Everything recorded while the switch is `on`. It is re-entered through the session rather than run once, and it triggers unprompted during ML work even when you did not ask for tracking.
+
+The arc it enforces:
+
+<Steps>
+  <Step title="Orient against what exists">
+    Check the team's prior work before proposing a direction. Duplicated work is the failure this step exists to prevent.
+  </Step>
+  <Step title="Create the project and experiment explicitly">
+    First, before the scaffold. Not inferred from a directory name at the end.
+  </Step>
+  <Step title="Route what the work produces">
+    Files to artifacts on the right anchor, numbers to metrics, decisions to notes. Each has one correct home.
+  </Step>
+  <Step title="Get inputs into the run snapshot">
+    So the run can be rebuilt rather than merely described.
+  </Step>
+  <Step title="Read back what actually landed">
+    A queued write is not a delivered one. The claim needs a read.
+  </Step>
+  <Step title="Close with the real lifecycle outcome">
+    `completed`, `failed` or `canceled` — whichever actually happened.
+  </Step>
+</Steps>
+
+Its `reference.md` holds the capture-call and artifact command syntax, the publication sequence, and project admin.
+
+<Info>
+What counts as trackable is broader than training: evals, sweeps, literature reviews, architecture decisions, dataset processing — and the work that supports them, like provisioning for a training job or a config change before a launch. If you are unsure whether something deserves recording, it does.
+</Info>
+
+## `/instrument-code` — wire the SDK in
+
+Wires `probe.init` and `probe.log` into a script that trains, evaluates, sweeps or serves.
+
+It fires when writing or changing any such script, when launching one on another machine, when a trainer already has its own integration (Miles, TRL, VERL, Ray), and when a run finished green but recorded nothing, less than expected, or onto the wrong run.
+
+<Warning>
+It is a **hard trigger before paid GPU hours.** A run that costs real money and records nothing is the expensive version of this mistake, and it is not recoverable after the fact.
+</Warning>
+
+## `/visualize-progress` — where the work stands
+
+Renders the tracked state, the gaps, and the arc as one timeline with the next action named. Fires on broad questions about the work, on arriving in an unfamiliar project, before a run starts or after one ends, and when planning next steps.
+
+<Note>
+Its one rule: **every line is a claim that needs a read**, never a memory of this session. Writes queue, so `probe outbox status` must be clean — or the run closed with `probe run end` — before a stage or a count is stated as done.
+</Note>
+
+## `/edit-notes` — how to write a note
+
+The mechanism for writing any entity's notes, and the shared team note. Loaded before any note write.
+
+Its rules, in short: pull before you write, because anyone may have written since; never paste external text verbatim, because a note is rendered into every teammate's instructions; correct or delete rather than striking through, because a reader sees the current body and never the history behind it.
+
+See [Notes and documents](/tracking/notes).
+
+## `/audit-team-note` — the periodic check
+
+Ensures the team note carries nothing false and has not grown past its render budget. Uses `/edit-notes` for the actual editing, and is meant to run **in a subagent or asynchronously** so the audit never sits inline with your work.
+
+The trigger is **size**, not the calendar.
+
+## `/read-rules` and `/set-rule` — workflow memory
+
+<CardGroup cols={2}>
+  <Card title="/read-rules" icon="book-open">
+    Reads the team's stored conventions for the situation you are about to be in. **Before** an irreversible or shared-consequence step, and on arriving in an unfamiliar workspace — never after.
+  </Card>
+  <Card title="/set-rule" icon="gavel">
+    Records one. Fires when you say how something *should* be done, or correct the agent in a way that applies to anyone doing this tomorrow.
+
+    **Nothing is written until you confirm it.**
+  </Card>
+</CardGroup>
+
+Both are behind the workflow-memory rollout. See [Team rules](/tracking/rules).
+
+## Where skills come from
+
+Skills ship inside the `probe-research` plugin and follow the Agent Skills standard, so they load in any host that implements it. Updating the plugin updates the skills — there is nothing to sync by hand.
+
+<Warning>
+Plugin content cannot vary per user, so a skill gated behind a per-user flag is simply absent from the package while that flag is on. `/set-rule` is the current example: its absence is the gate working, not a broken install.
+</Warning>
