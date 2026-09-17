@@ -1,20 +1,110 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Probe Research"
+sidebarTitle: "Introduction"
+description: "The system of record for everything your team does in ML — runs, metrics, files, decisions and the coding sessions around them."
+icon: "house"
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Probe Research records the work, not just the numbers. A training run and its loss curve, yes — but also the eval sweep, the dataset pass, the literature review, the design decision someone made on a Tuesday, and the coding-agent session where all of it actually happened. It keeps them in one place, links them together, and makes them searchable by meaning.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install, sign in, and record your first run in about five minutes.
+  </Card>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
+  <Card title="Core concepts" icon="diagram-project" href="/concepts">
+    Workspaces, projects, experiments, runs, artifacts, notes — and how they nest.
+  </Card>
+
+  <Card title="The setup wizard" icon="wand-magic-sparkles" href="/wizard/overview">
+    `npx probe-research` installs, imports, configures and diagnoses everything.
+  </Card>
+
+  <Card title="Python SDK" icon="python" href="/sdk/quickstart">
+    Three lines in a training script: `probe.init`, `probe.log`, `probe.finish`.
+  </Card>
+</CardGroup>
+
+## Three ways in, one backend
+
+Probe has three write surfaces. They are not alternatives to each other — most teams use all three, because they cover different moments.
+
+<CardGroup cols={3}>
+  <Card title="Python SDK" icon="code" href="/sdk/quickstart">
+    **From inside running code.** Metrics and spans as a training or eval script executes. The replacement for a `wandb.init()` call.
+  </Card>
+
+  <Card title="CLI" icon="terminal" href="/cli/overview">
+    **From a shell.** Register projects and runs, attach files, write notes, import history, read anything back.
+  </Card>
+
+  <Card title="Agent plugin" icon="robot" href="/agents/overview">
+    **From a coding agent.** Skills that teach Claude Code or Codex the workflow, plus a read-only MCP server so the agent can query lab history.
+  </Card>
+</CardGroup>
+
+Everything lands in the same place: the [dashboard](/dashboard/overview) at [research.prbe.ai](https://research.prbe.ai), where the work is browsable, chartable, and searchable.
+
+## What Probe holds
+
+<AccordionGroup>
+  <Accordion title="Structured experiment data" icon="chart-line">
+    Projects, experiments, runs and run groups; metric series with arbitrary coordinate axes; spans and trajectories; immutable experiment versions; lineage edges between runs, artifacts and papers.
+
+    See [the data model](/tracking/model) and [metrics](/tracking/metrics).
+  </Accordion>
+
+  <Accordion title="Files and code" icon="folder">
+    Artifacts anchored to a run, experiment, project, workspace or the team's Shared folder — content-addressed, deduplicated by SHA-256, versioned. Plus non-disruptive code and environment snapshots that can be restored later.
+
+    See [artifacts](/tracking/artifacts) and [snapshots](/tracking/snapshots).
+  </Accordion>
+
+  <Accordion title="Prose that survives the session" icon="pen">
+    Three kinds, deliberately separate: a short `description` for identity, a teammate-facing Markdown **Overview**, and agent-facing **notes** with titled sub-notes and merge-on-push editing. Plus a shared **team note** injected into every agent session.
+
+    See [notes](/tracking/notes).
+  </Accordion>
+
+  <Accordion title="Coding-agent sessions" icon="message">
+    With capture on, your Claude Code and Codex sessions stream into the team knowledgebase: prompts, replies and the shell commands you ran. They become searchable evidence for why something was done.
+
+    See [session capture](/agents/capture).
+  </Accordion>
+
+  <Accordion title="Literature and team rules" icon="book">
+    Papers recorded against a research project — what each says, the repo read alongside it, and where the two disagree. And workflow memory: the conventions somebody declared out loud, returned to an agent when they apply.
+
+    See [papers](/tracking/papers) and [team rules](/tracking/rules).
+  </Accordion>
+</AccordionGroup>
+
+## Search that reads the whole record
+
+One index covers all of it. An exact channel matches identifiers, names and paths; a semantic channel matches meaning. Both answer the same query, sectioned by source, with per-result provenance.
+
+That is what makes the rest worth doing: a run you recorded in March is findable in September by describing it, and so is the session where you decided to run it.
+
+<Card title="Search and knowledge" icon="magnifying-glass" href="/dashboard/search">
+  Filter grammar, semantic queries, and what the index actually covers.
 </Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="I want to record a training run" icon="play" href="/sdk/quickstart">
+    Start with the Python SDK.
+  </Card>
+
+  <Card title="I want my coding agent to track work" icon="wand-magic-sparkles" href="/wizard/overview">
+    Run the setup wizard.
+  </Card>
+
+  <Card title="I have history in Weights & Biases" icon="right-left" href="/integrations/wandb">
+    Import it.
+  </Card>
+
+  <Card title="I need to run this on our own cluster" icon="server" href="/deploy/self-host">
+    Self-host from the same Helm chart.
+  </Card>
+</CardGroup>

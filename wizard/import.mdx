@@ -1,0 +1,101 @@
+---
+title: "Import research work"
+description: "Bring in saved coding sessions and folders of existing project work, with a review step before anything uploads."
+icon: "box-archive"
+---
+
+Most teams arrive with years of work already done. This is how it gets in.
+
+Reach it from the wizard's main menu under **Your research → Import research work**, from the last screen of the install, or directly:
+
+```bash
+probe backfill /path/to/work --project existing-project
+probe backfill --transcripts-only
+```
+
+Two kinds, chosen independently.
+
+## Past coding sessions
+
+Your saved Claude Code, Codex and pi transcripts, uploaded into the team knowledgebase so they are searchable alongside everything else.
+
+- The picker **detects saved histories independently of which agents you installed** — a machine that once had Codex and no longer does still has its transcripts.
+- Every detected source is selected by default. Only what you leave selected is imported.
+- There is an explicit **Skip** action. Continuing with nothing selected is a real answer.
+
+<Note>
+Historical conversations import as **standalone sessions**. Backfill verifies their native session identity and preserves immutable retries, but it does not infer or create links to projects, experiments or runs. Nothing is guessed.
+</Note>
+
+## A folder of project work
+
+An agent reads the folder, works out what is in it, uploads what it finds and writes a description of it.
+
+<Steps>
+  <Step title="Pick the folder">
+    A browsing picker, with keys beyond the usual arrows:
+
+    | Key | Does |
+    |---|---|
+    | `Enter` | Open the highlighted folder |
+    | `Ctrl+N` | Continue with the folder you are in |
+    | `Ctrl+L` | Type a path directly |
+    | `Ctrl+B` | Back |
+  </Step>
+
+  <Step title="Choose the destination">
+    Select or create the Probe project the work will land in, and the workspace it is filed in. When Weights &amp; Biases is part of the import, this choice covers both the files and the W&amp;B history — one destination, chosen once, before anything starts.
+  </Step>
+
+  <Step title="Choose how it runs">
+    <AccordionGroup>
+      <Accordion title="Review the plan first" icon="clipboard-check">
+        Scanning and reading happen in the installer, and you approve the plan before anything is delivered. Reading progress names its current phase and the analysis steps it has completed. Completed reads are cached, so an interrupted preparation reuses them instead of starting over.
+      </Accordion>
+      <Accordion title="Scan and import in the background" icon="forward">
+        Approves the resulting proposal automatically. Scanning and uploading run as phases of one saved import job and you can carry on immediately.
+
+        **This option is never selected by default** — automatic approval is a choice you make, not one you fall into.
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+</Steps>
+
+### What it does with what it finds
+
+- **Files** become artifacts on the chosen anchor, deduplicated by content.
+- **References stay references.** An artifact recorded as a pointer to bytes you keep elsewhere is never silently turned into an upload.
+- **A GitHub checkout is recognised.** Backfill checks your existing GitHub integration's access, uses bounded commit history as context, and reuses or attaches the corresponding code source after placement review.
+- **File and Git reconstruction drafts are saved for explicit publication review** — the agent's reading of the folder is a draft, not a published document. Refreshing the AI summary is a separate step again.
+
+### Resuming, and what is not silently added
+
+Imports run in the background. Workers survive a terminal disconnect and retry temporary network failures on their own. After a machine restart, reopening the wizard resumes interrupted jobs from their saved checkpoints.
+
+Recovery keeps the original session versions and destination. Folder delivery resumes the saved plan and file versions — **new or changed files are not silently added to that delivery during a retry.**
+
+Rerun to resume. Coverage of current files is reported separately from pending delivery, so "we read everything" and "everything arrived" are never conflated.
+
+```bash
+probe backfill /path/to/work --source-id <id>       # the folder moved; same destination
+probe backfill /path/to/work --import-changed       # review files that changed since
+probe backfill /path/to/work --import-unverified    # review unresolved legacy matches
+```
+
+<Tip>
+Direct `probe backfill` commands are synchronous, but they share the same file coverage and delivery receipts as the wizard's background jobs. Completed uploads are reused whichever entry point you use — switching between them costs nothing.
+</Tip>
+
+## Weights &amp; Biases in the same pass
+
+Selecting W&amp;B alongside a folder import scans and imports both in the background under the destination you chose up front. There is no later file-plan review to come back to, and your workspace selection is preserved if the current choice changes.
+
+For W&amp;B on its own — local run directories or a hosted project — see [Weights &amp; Biases](/integrations/wandb).
+
+## Watching them
+
+The wizard's main menu shows active import bars directly under the device summary, and **Existing imports** is the full view.
+
+<Card title="Existing imports" icon="list-check" href="/wizard/imports">
+  Monitor progress, read results, and resume work that needs attention.
+</Card>

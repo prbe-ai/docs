@@ -1,0 +1,144 @@
+---
+title: "Core concepts"
+description: "Workspaces, projects, experiments, runs, artifacts, notes — what each one is for and how they nest."
+icon: "diagram-project"
+---
+
+Probe has a small vocabulary. Most confusion comes from two words that sound interchangeable and are not: an **experiment** carries a question, a **run** carries an execution. Get that one right and the rest follows.
+
+## The spine
+
+```
+workspace                 a shelf — where projects are filed
+└── project               a body of work, with a declared kind
+    ├── experiment        one question, and the runs that answer it
+    │   ├── run group     a sweep, an ensemble, a distributed job
+    │   └── run           one execution: metrics, files, spans, an outcome
+    └── run               a project-direct run — work with no hypothesis
+```
+
+Every level can carry artifacts, notes, tags and lineage edges. Nothing above a run is required for a run to exist.
+
+## Workspace
+
+A place to file projects and files. Not an ownership boundary — **every member of the team reads every workspace**, and that is a product decision, not an omission. What a workspace can restrict is who may *edit* what is filed in it, through [access groups and writer lists](/dashboard/workspaces).
+
+Teams use workspaces the way you would use folders: `engineering`, `wandb-imports`, one per external integration. Connecting Weights &amp; Biases or Benchling creates a dedicated workspace and asks you what to call it.
+
+```bash
+probe workspace list
+probe workspace create engineering
+probe workspace use engineering      # scopes this context
+```
+
+## Project
+
+The top of the data model, and the unit a person thinks in. A project declares a **kind**, from a closed vocabulary, and the kind decides how its dashboard page is laid out:
+
+| Kind | What it means | Lead content tab |
+|---|---|---|
+| `training` | Work where model weights move | Experiments |
+| `inference` | Frozen-weight work — sweeps, ablations, evals | Experiments |
+| `research` | Document-shaped investigation: lit reviews, design, theory | Papers |
+| `general` | Miscellaneous work — a real choice, not a fallback |  |
+
+Kind reaches the project page only. It never restructures an experiment or a run.
+
+Projects nest: a phase of a bigger effort is a **subproject** (`probe project create --parent`), never a new top-level sibling. Projects can also **reference** each other laterally — use that when a review informed a training run, or two efforts share a method, where a parent relationship would claim something false.
+
+## Experiment
+
+One question, and the runs that answer it. The `question` field is the point of the entity; if you cannot write one, you probably want a project-direct run instead.
+
+The question is **first-write-wins**: reopening an experiment never rewrites it. That is deliberate — an experiment whose question drifts to match its results has stopped being an experiment.
+
+An experiment can be **frozen** into an immutable version that pins its current run set (`probe experiment freeze`), which is what you cite when the numbers go into a paper or a decision.
+
+## Run
+
+One execution. It holds:
+
+- **metric series**, each identified by `(kind, key, dimensions)`
+- **artifacts** — the files it read and produced
+- **spans** — a trajectory: rollouts, turns, tool calls
+- **a code snapshot** — what was on disk when it started
+- **lifecycle**: `running` → `completed` / `failed` / `canceled`, plus a heartbeat so a crashed run is reaped rather than left open forever
+
+Runs relate to each other three ways. A **child** run nests under a parent. A **fork** continues a source run from a step, leaving the source untouched. A **group** collects peers — a sweep, an ensemble, the ranks of one distributed job.
+
+<Note>
+Creation rules differ by surface on purpose. The SDK creates projects, experiments and runs freely, because a training script should not fail on a missing row. On the CLI, `probe run start` **never** creates — the slug is hand-typed every time, and that is where typos come from. A near-miss of an existing slug is refused, not created.
+</Note>
+
+## Artifact
+
+A file, anchored somewhere. The anchor is what makes artifacts useful rather than a dumping ground:
+
+| Anchor | Use it for |
+|---|---|
+| run | Checkpoints, outputs, logs, captured code |
+| experiment | Something that belongs to the question, not one execution |
+| project | Datasets, reference material, figures |
+| workspace | Files filed on the shelf, not under any project |
+| shared | The team's Shared folder — the lab-wide, promoted level |
+
+Artifacts are content-addressed and deduplicated by SHA-256, and they **version**: appending the next version keeps the chain. Versions never supersede by name — two artifacts with the same name coexist and are ordered by creation.
+
+Bytes do not have to leave your infrastructure: an artifact can be a **reference** to an object you keep in your own bucket, with the pointer and checksum recorded in Probe.
+
+## Prose: three homes, deliberately
+
+This is the distinction people get wrong most often.
+
+<CardGroup cols={3}>
+  <Card title="description" icon="tag">
+    The short identity line. One or two sentences. Shown everywhere the entity is listed.
+  </Card>
+  <Card title="Overview" icon="file-lines">
+    `summary_markdown` — the durable, teammate-facing document, shown below the AI summary on the entity page. Whole-document, last-write-wins.
+  </Card>
+  <Card title="notes" icon="note-sticky">
+    The operational briefing agents read and write. Supports append, titled sub-notes, and merge-on-push editing.
+  </Card>
+</CardGroup>
+
+On top of those there is one **team note**: a single shared document injected into every agent session on every machine. It is working memory for the whole team, and it has a render budget — a note past it reaches nobody.
+
+<Card title="Notes in full" icon="pen" href="/tracking/notes">
+  Checkout/push editing, sub-notes, the team note, and the rules for writing one.
+</Card>
+
+## Session
+
+A coding-agent conversation. With [capture](/agents/capture) on, sessions stream into the knowledgebase and become searchable: the prompts, the replies, and the shell commands. A session can also be *attributed* to a run, which is how "why was this run launched" stays answerable.
+
+## Lineage
+
+Edges between entities — run to run, run to artifact, artifact version to artifact version, paper to paper. Lineage is what lets you ask what produced a checkpoint, or which paper led to which.
+
+```bash
+probe edge add --from run:abc --to artifact:ckpt-7 --type produced
+probe experiment edges EXPERIMENT_ID
+```
+
+## Tags
+
+Free-form labels on projects, experiments, runs and papers. Filtering by several tags is **AND**, not OR.
+
+```bash
+probe run tag $RUN baseline reproduced
+probe run tag $RUN --remove reproduced
+probe run list --tag baseline --tag grpo
+```
+
+## The switch
+
+For coding agents there is one more concept: the per-conversation switch.
+
+| State | Reads | Writes |
+|---|---|---|
+| `on` | yes | yes |
+| `read` | yes | no |
+| `off` | no | no |
+
+Only the researcher moves it. An agent invoking the skill loads guidance and never changes the state. See [the `/probe` skill](/agents/skills).
