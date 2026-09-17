@@ -110,7 +110,8 @@
         "group": "Reference",
         "icon": "book",
         "pages": [
-          "reference/environment"
+          "reference/environment",
+          "reference/troubleshooting"
         ]
       }
     ]

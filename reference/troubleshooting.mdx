@@ -1,0 +1,146 @@
+---
+title: "Troubleshooting"
+description: "The failures that look like something else, and what to check first."
+icon: "wrench"
+---
+
+Start here:
+
+```bash
+probe doctor
+```
+
+Read-only. It prints versions, install method, account, plugin status, capture status and credential source, agent rules, team-note sync, auto-update with its **last attempt**, and the outbox.
+
+## "My run recorded nothing"
+
+<AccordionGroup>
+  <Accordion title="Check the outbox first" icon="inbox">
+    ```bash
+    probe outbox status      # exit 0 when delivered, 2 otherwise
+    probe flush
+    ```
+
+    Writes queue locally by default. A queued write is recorded on your machine and **not visible to anyone else** — the dashboard and the API will not show it.
+  </Accordion>
+
+  <Accordion title="Check you are in the right account" icon="user">
+    ```bash
+    probe context list
+    probe whoami
+    ```
+
+    The same project name can exist in two tenants. Under the wrong context a list command returns the *other* tenant's same-named copy rather than erroring, so a healthy project can read as wiped.
+  </Accordion>
+
+  <Accordion title="Check the switch" icon="toggle-on">
+    ```bash
+    probe session status
+    ```
+
+    Returns the full decision: the state, which default applied, and whether the capture daemon is running. `/probe read` records nothing by design.
+  </Accordion>
+
+  <Accordion title="Check the run actually closed" icon="flag-checkered">
+    ```bash
+    probe get $RUN | jq -r '.status'
+    ```
+
+    `probe run end` is the delivery barrier. A run left `running` may still have unsent writes behind it.
+  </Accordion>
+</AccordionGroup>
+
+## "The wall of tiles"
+
+A run page full of single-value tiles instead of graphs means a dimension carried an identifier.
+
+```python
+series = client.run_series(run.id)
+assert len(series) < 50, f"{len(series)} series — a wall of tiles"
+```
+
+Series count is roughly the **product** of your dimension cardinalities. Move per-sample identity into `labels`, and per-item detail into an artifact. See [metrics](/tracking/metrics).
+
+The failure is silent — every call succeeded and the values are correct — so assert the count after the first run rather than eyeballing the dashboard.
+
+## "Search returns nothing"
+
+<AccordionGroup>
+  <Accordion title="You are scoped to one workspace" icon="layer-group">
+    Search respects the workspace switcher. **Choose All workspaces** for cross-workspace discovery. This is the most common cause by a distance.
+  </Accordion>
+  <Accordion title="One search is not a measurement" icon="dice">
+    Semantic retrieval is not deterministic between calls. Before concluding something is missing, retry, and prefer a **literal identifier** — a slug, an issue number, a path — which goes through the exact channel.
+
+    A `degraded` state means retry. An empty list under a degraded or capped retrieval is not evidence of absence, and the response says so.
+  </Accordion>
+  <Accordion title="The engine is off" icon="plug-circle-xmark">
+    A self-hosted install without the knowledge engine returns `state: "partial"` with SQL-exact results only — no semantic channel, and no match on run names. See [self-hosting](/deploy/self-host).
+  </Accordion>
+</AccordionGroup>
+
+## "Capture says it is on but nothing arrives"
+
+```bash
+probe doctor            # "Credential from" and the capture status
+probe session status    # the capture block: running, pid, reason
+```
+
+<Warning>
+**Working MCP tools do not prove capture is running.** The two plugins fail independently. On pi especially, a settings file can load the skills and the MCP manifest without ever spawning the capture daemon — tracking reads as on while nothing is captured.
+
+A worktree is the other case: it misses the project-local settings that re-enable capture, and that re-enable is trust-gated per path.
+</Warning>
+
+## "I signed out but it is still authenticated"
+
+A credential in your shell outranks the config file. Check for `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` and `PROBE_SERVICE_TOKEN` — no command can unset a variable in your parent shell, so the wizard names them instead.
+
+## "Restore says files are missing"
+
+```bash
+probe snapshot-show $RUN --pending-only
+probe snapshot-restore $RUN --verify-only
+```
+
+<Warning>
+A recorded git ref only restores where that ref resolves. A commit on an unpushed branch, or a remote the reader cannot reach, restores nothing — the **uploaded bytes** are what rebuilds the tree.
+
+Also: the manifest's `n_pending_upload` is a classification count frozen at capture time, not work-remaining. Use `--pending-only`, which reconciles against what the upload actually did.
+</Warning>
+
+## "probe run start says the slug does not exist"
+
+Working as designed. The CLI never creates — a near-miss of an existing slug is refused rather than silently creating a second, almost-identical experiment.
+
+```bash
+probe experiment create dockq --question "..." --project folding
+```
+
+## "A bare UUID is not found"
+
+A bare ref is the **slug**. An id is written `id:<uuid>`.
+
+```bash
+probe project get id:6fa49e87-...
+```
+
+## "The team note is not reaching sessions"
+
+It has a render budget, and over budget the render emits a pointer instead — so an oversized note reaches nobody. Read the recorded budget rather than a remembered number, and run the audit.
+
+```bash
+probe notes team
+probe notes sync
+```
+
+## "A tool the docs mention is not in my agent"
+
+`probe_procedures` and the `/set-rule` skill are behind a per-user rollout flag, and plugin content cannot vary per user — so on accounts outside the rollout they are simply absent. That is the gate working.
+
+## Still stuck
+
+```bash
+probe wizard --action diagnose
+probe wizard --action manual      # every command the wizard would run
+```
