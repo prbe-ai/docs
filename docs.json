@@ -74,6 +74,7 @@
           "agents/overview",
           "agents/skills",
           "agents/mcp",
+          "agents/capture",
           "agents/statusline"
         ]
       },
@@ -86,6 +87,7 @@
           "dashboard/experiments-runs",
           "dashboard/charts",
           "dashboard/files",
+          "dashboard/search",
           "dashboard/assistant",
           "dashboard/workspaces"
         ]

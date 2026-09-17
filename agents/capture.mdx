@@ -1,0 +1,124 @@
+---
+title: "Session capture"
+description: "What leaves your machine, who can see it, and every way to stop it."
+icon: "message"
+---
+
+Session capture streams your coding-agent sessions into the team knowledgebase, so the reasoning behind a run is searchable next to the run itself.
+
+It is the one feature that moves your own words off your machine, so this page is explicit about it.
+
+## What is sent
+
+<CardGroup cols={2}>
+  <Card title="Sent" icon="upload">
+    - Your prompts
+    - The assistant's replies
+    - The shell commands you run
+  </Card>
+  <Card title="Not sent" icon="shield">
+    - File contents
+    - Tool output
+  </Card>
+</CardGroup>
+
+**Captured sessions are visible to your whole team.**
+
+<Warning>
+Credential-shaped values are replaced before upload — but **that is a filter, not a guarantee.** Keep live credentials out of your prompts. A secret pasted into a conversation is a secret you should rotate, whether or not the filter caught it.
+</Warning>
+
+## Consent
+
+Capture is **per-device**, and it is disclosed twice before it starts: once on the wizard's review screen, and again at the browser approval. Provisioning a fleet from one image does not share a pairing — each machine authorizes itself.
+
+## Turning it off
+
+<Tabs>
+  <Tab title="The wizard">
+    ```bash
+    npx probe-research          # → Settings → Session capture
+    ```
+
+    Unticking it stops the upload immediately and unpairs this device's capture credential. The tracking plugin stays installed.
+  </Tab>
+
+  <Tab title="A flag">
+    ```bash
+    probe wizard --no-capture --yes
+    probe wizard --no-capture --uninstall --yes    # also remove the tap plugin
+    ```
+
+    `--uninstall` is off by default: turning capture off keeps the plugin unless you say otherwise.
+  </Tab>
+
+  <Tab title="Just this conversation">
+    ```
+    /probe read
+    ```
+
+    ```bash
+    probe session state read
+    ```
+
+    This stops recording for the conversation without changing the device.
+  </Tab>
+</Tabs>
+
+### The killswitch
+
+Turning capture off writes a killswitch alongside clearing the credential. It is what guarantees a daemon that is already running stops, independent of whether the teardown of the credential file succeeded.
+
+A device in that state reports `off (killswitch set)` in the wizard summary and in `probe doctor`. Settings will not silently override it.
+
+## Three places a credential can come from
+
+This is why "capture is off" needs checking rather than assuming.
+
+| Source | Cleared by turning capture off? |
+|---|---|
+| The paired file | Yes |
+| `PROBE_INGEST_TOKEN` in your environment | **No** — nothing can unset a variable in your parent shell |
+| The Probe CLI config | Yes |
+
+The wizard names an environment credential when it sees one, because clearing only the file would let capture resume at the next session start while the menu reported it as off.
+
+```bash
+probe doctor        # "Credential from" says which one actually resolved
+```
+
+## Verifying it is really running
+
+```bash
+probe session status
+```
+
+The response includes a `capture` block with the daemon's state and reason — so "tracking is on" and "a daemon is actually capturing" can be told apart.
+
+<Warning>
+**Working MCP tools do not prove capture is running.** On pi in particular, a settings file can carry the package without its extensions: skills and the MCP manifest load, the capture entrypoint does not, and tracking reads as on while no daemon ever spawns. `probe doctor` names that state explicitly.
+
+Worktrees are another case — a worktree misses the project-local settings that re-enable capture, and that re-enable is trust-gated per path.
+</Warning>
+
+## What happens to captured sessions
+
+They become documents in the team knowledgebase, searchable by meaning alongside runs, notes and papers, and readable as entities through the MCP `transcript` view.
+
+In the dashboard a session has its own page with its transcript and digest, and can be attributed to a run — which is what keeps "why was this launched" answerable months later.
+
+Each agent's sessions carry their own document-type prefix (`claude_code.*`, `codex.*`, `pi.*`), and the bare token `session` spans all three.
+
+## Importing history instead
+
+Capture is live. To bring in transcripts you already have:
+
+```bash
+probe backfill --transcripts-only
+```
+
+See [Import research work](/wizard/import).
+
+## Removing captured data
+
+Uninstalling a client does **not** delete anything already sent. Deletion is a dashboard and API operation against the stored documents, not a client-side one.
