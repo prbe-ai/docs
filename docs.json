@@ -81,7 +81,8 @@
           "dashboard/overview",
           "dashboard/projects",
           "dashboard/experiments-runs",
-          "dashboard/charts"
+          "dashboard/charts",
+          "dashboard/files"
         ]
       },
       {
