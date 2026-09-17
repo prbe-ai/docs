@@ -102,7 +102,8 @@
         "group": "Deploy and operate",
         "icon": "server",
         "pages": [
-          "deploy/architecture"
+          "deploy/architecture",
+          "deploy/self-host"
         ]
       },
       {

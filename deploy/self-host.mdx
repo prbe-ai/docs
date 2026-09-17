@@ -1,0 +1,154 @@
+---
+title: "Self-hosting"
+description: "Install Probe on your own Kubernetes cluster — the data-residency topology, including air-gapped."
+icon: "server"
+---
+
+The experiment-tracking core — API plus Postgres, with metrics and artifacts on your infrastructure — from the same Helm chart the managed service runs. **No dashboard, no vendor callback.**
+
+The software runs entirely on your infra and never contacts us. Ordinary external egress — image pulls, an approved LLM provider — remains your policy choice, not ours.
+
+## Requirements
+
+| Thing | Value |
+|---|---|
+| Kubernetes | 1.28 or newer |
+| CNPG operator | **1.26 or newer** — older silently drops the kb extensions |
+| Namespace | `research`, pre-created |
+| API image | `ghcr.io/prbe-ai/research-os-api` (private; multi-arch) |
+| Postgres image | `ghcr.io/prbe-ai/prbe-postgres` (public GHCR) |
+| Object storage | Any S3-compatible endpoint (R2, MinIO, AWS S3) plus one bucket |
+| Health | `GET /healthz` (readiness, includes DB and schema) · `GET /livez` (process) |
+| `environment` | `local` / `dev` / `staging` / `main` — use `main`, **never `local`** |
+
+The default install runs with the **knowledge engine off**, which is the simplest complete topology. Turning it on is a `helm upgrade` with one extra values file.
+
+<Note>
+Every step below is exercised nightly in CI against the same flow. This is the human transcription of a tested path, not a description of one.
+</Note>
+
+## What engine-off means
+
+- `/v1/search` returns `state: "partial"` with SQL-exact results only. The exact channel matches projects, experiments and artifacts — not run names.
+- AI summaries stay dormant and are badged STALE; they need an LLM gateway.
+- No dashboard ships. Clients are machines using service-minted bearer tokens, so **no SSO or OIDC integration is required** — those configuration keys can be placeholders.
+
+## Install
+
+<Steps>
+  <Step title="Namespace and configuration, first">
+    Create the namespace, then the chart's configuration Secret holding your object-store endpoint, bucket, and the two random values the app signs with.
+
+    Keep `createNamespace: false` in your values. The ordering is deliberate: it removes the install race, because the API pod mounts that Secret at boot — and it means `helm uninstall` can never delete it, since the namespace is not chart-owned.
+  </Step>
+
+  <Step title="Values">
+    ```yaml
+    environment: main
+    createNamespace: false
+
+    engine:
+      enabled: false            # REQUIRED — the chart default is true
+    litellm:
+      enabled: false
+    analytics:
+      enabled: false            # no product-analytics egress
+
+    image:
+      repository: ghcr.io/prbe-ai/research-os-api
+      tag: "<pinned app version>"     # pin; never float
+
+    postgres:
+      storageClass: <your-retain-class>   # pgdata is the system of record
+      storageSize: 20Gi
+
+    ingress:
+      enabled: false
+    ```
+
+    Start from the continuously-tested overlay in `tests/selfhost/` and adapt the stand-ins.
+  </Step>
+
+  <Step title="Install, without --wait">
+    ```sh
+    helm install research-os charts/research-os -n research -f your-values.yaml
+    kubectl -n research rollout status deployment/research-os --timeout=300s
+    ```
+
+    <Warning>
+    **Do not pass `--wait` on first install.** The schema-migrate Job is a *post-install* hook while the API's readiness probe requires the schema — `--wait` waits for readiness before running hooks and deadlocks until timeout.
+
+    Plain `helm install` blocks only on the migrate hook; the `rollout status` poll covers API readiness. Upgrades are immune, because migrate is a *pre-upgrade* hook there.
+    </Warning>
+
+    Healthy looks like: migrate Job `Completed` (control and experiment applied, kb intentionally skipped), the `research-pg` CNPG cluster healthy, the API pod Ready, the upload-reaper CronJob registered, and `/healthz` returning 200 with all three databases green.
+  </Step>
+
+  <Step title="Seed the first team and credential">
+    A fresh install has no users. Seed one team, one owner and one API credential by SQL in the CNPG primary; the app auto-creates personal workspaces on demand, so seed nothing else.
+
+    1. **experiment** DB: the `customers` mirror row — first, matching the app's own team-create ordering.
+    2. **control** DB: `customers`, `users`, `team_members` (role `owner`), and an `api_tokens` row holding **only the SHA-256 digest** of the credential string.
+
+    Generate the random credential yourself and hand the plaintext to the client. It is never stored. `tests/selfhost/seed.py` is the executable reference.
+
+    <Warning>
+    Run SQL with `kubectl exec -i`. **Without `-i`, `psql` silently no-ops** — it exits 0 having done nothing.
+    </Warning>
+
+    Verify against `/v1/me`, which is the machine endpoint. `/auth/me` is the dashboard's session-only one.
+  </Step>
+
+  <Step title="Verify">
+    The smoke suite's gates, by hand:
+
+    - `/healthz` returns 200 with three databases green
+    - `/v1/me` returns the seeded identity
+    - create project, then experiment (a question is required), then run
+    - post metrics and read them back
+    - upload an artifact: presign, PUT, confirm
+    - `POST /v1/search` returns `state: "partial"` with an exact hit — the expected engine-off shape
+  </Step>
+</Steps>
+
+## TLS
+
+| Posture | Configuration |
+|---|---|
+| No ingress | `ingress.enabled: false` — reach the API by port-forward or your own LB or mesh. What the smoke suite runs |
+| Your own certificate | `ingress.enabled: true`, `clusterIssuer: ""`, and create the TLS secret yourself |
+| cert-manager | Keep a `clusterIssuer` pointing at **your** issuer |
+
+Let's Encrypt HTTP-01 works only if the API host is publicly resolvable, which is usually not true for a residency install.
+
+## Turning the engine on
+
+Semantic search is a `helm upgrade` with one extra values file layered on top of your engine-off values. The API rolls and the engine's `kb-migrate` runs as a pre-upgrade hook.
+
+Afterwards `/v1/search` is no longer `"partial"`: a semantic channel is populated alongside the SQL exact one.
+
+## Backups and recovery
+
+Continuous WAL archiving to object storage via Barman gives point-in-time recovery with an RPO of five minutes or better. It is a values flip, with its credentials Secret named after the cluster.
+
+<Warning>
+Use a **Retain** reclaim storage class. `pgdata` is the system of record, and a Delete-class volume removed with the release takes it.
+</Warning>
+
+## Upgrades
+
+Pin the image tag; never float it. Migrations run as a pre-upgrade hook, so `--wait` is safe on upgrade.
+
+<Warning>
+A pinned engine image pins the **kb schema** with it — `kb-migrate` runs alembic from that image. Bumping the app without the engine leaves kb migrations unapplied.
+</Warning>
+
+## Air-gapped
+
+- Record artifacts as **references** so bytes stay in your own bucket.
+- Sign in with `probe login --token` or `--endpoint-only`, or set `PROBE_TOKEN` and `PROBE_BASE_URL`.
+- `probe wizard --action manual` prints the exact commands for setting agents up without a network-assisted install.
+
+## Compliance
+
+There is no vendor callback. Analytics egress is a values flag and off in this topology, so a compliance review can verify the claim by reading the chart rather than trusting a statement about it.
