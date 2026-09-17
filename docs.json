@@ -69,7 +69,8 @@
         "icon": "robot",
         "pages": [
           "agents/overview",
-          "agents/skills"
+          "agents/skills",
+          "agents/mcp"
         ]
       },
       {
