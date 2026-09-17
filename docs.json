@@ -101,7 +101,9 @@
       {
         "group": "Deploy and operate",
         "icon": "server",
-        "pages": []
+        "pages": [
+          "deploy/architecture"
+        ]
       },
       {
         "group": "Reference",

@@ -1,0 +1,75 @@
+---
+title: "Architecture"
+description: "How Probe is put together, and which constraints decided the shape."
+icon: "sitemap"
+---
+
+```
+research.prbe.ai (Next.js)  ──►  api.research.prbe.ai (ingress + cert-manager)
+                                          │
+                                 FastAPI API service (:8080)
+                                          │
+   ┌────────────────── one CNPG Postgres instance ──────────────────┐
+   │  control db          experiment db            kb db                 │
+   │  registry + auth     projects → experiments   pgvector + AGE +      │
+   │  + metering          → runs → spans/metrics   pg_search             │
+   │  (cross-tenant)      /artifacts (RLS)         (RLS)                 │
+   └─── WAL → object store (DR, RPO ≤ 5 min) ── join key: (customer_id, run_id) ───┘
+                                          │
+                        Object storage: R2 or S3 (one bucket, per-tenant prefixes)
+                        artifacts + knowledge blobs · pointer + sha256 in the DB
+```
+
+## One instance, three databases
+
+`control`, `experiment` and `kb`, reached by three connection strings. That seam is what lets any plane move to its own instance later by changing configuration rather than code.
+
+| Database | Holds |
+|---|---|
+| `control` | The customer registry, authentication, metering. Cross-tenant by design |
+| `experiment` | Projects → experiments → runs → spans, metrics, artifacts. Per-tenant RLS |
+| `kb` | The knowledge index. Per-tenant RLS |
+
+`control.customers` is the source of truth for tenancy, mirrored into the data databases.
+
+## Multi-tenancy
+
+Postgres row-level security on `customer_id`, an `app.current_customer_id` session setting, and a **non-superuser** application role. Not application-layer filtering — a missing `WHERE` clause cannot leak another tenant's rows.
+
+## Why CNPG, and not a managed Postgres
+
+The knowledge database needs `pgvector`, Apache AGE and `pg_search`. No managed Postgres offers all three. That single constraint is why the whole data plane is CloudNativePG rather than a hosted service — it is not a preference.
+
+## Blobs
+
+Artifacts and knowledge blobs go to S3-compatible object storage (Cloudflare R2 or AWS S3): one shared bucket with per-tenant prefixes, with the pointer and SHA-256 held in the database.
+
+**Reference-without-upload is supported**, which is what lets an air-gapped customer keep checkpoints in their own bucket while Probe holds only the pointer.
+
+## Backups
+
+Continuous WAL archiving to object storage via Barman, giving point-in-time recovery with an RPO of five minutes or better.
+
+## The client side
+
+| Package | Ships | Distributed via |
+|---|---|---|
+| `probe-research` (PyPI) | The SDK and the `probe` CLI | PyPI |
+| `probe-research` (npm) | A thin launcher that resolves the real CLI | npm / `npx` |
+| `probe-research` plugin | Skills and the read-only MCP server | The plugin marketplace |
+| `probe-research-tap` plugin | Session capture | The plugin marketplace |
+
+The SDK is the implementation. The CLI, the MCP source adapter, and the passive integrations all use it, which is why the CLI and SDK have capability parity and differ only in ergonomics.
+
+## Deployment topologies
+
+<CardGroup cols={2}>
+  <Card title="Managed" icon="cloud">
+    The hosted service at `research.prbe.ai`. Dashboard, knowledge engine, integrations, everything.
+  </Card>
+  <Card title="Self-hosted" icon="server" href="/deploy/self-host">
+    The same Helm chart on your cluster. Data residency: the software never contacts the vendor.
+
+    Default is engine-off and dashboard-less; the knowledge engine is a values flip.
+  </Card>
+</CardGroup>
