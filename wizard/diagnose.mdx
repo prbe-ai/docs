@@ -1,0 +1,113 @@
+---
+title: "Diagnose and repair"
+description: "probe doctor, the manual command list, and removing Probe from a device."
+icon: "stethoscope"
+---
+
+## Diagnose a problem
+
+```bash
+probe doctor
+```
+
+Read-only. It changes nothing and is safe to run any time. The same report is behind the wizard's **Help → Diagnose a problem**.
+
+```
+Probe Research doctor
+
+Versions
+  CLI                      0.172.0 (ok)
+  SDK                      0.172.0 (ok)
+  plugin                   0.90.0 (ok)
+  transcript tap           0.6.1 (ok)
+  Checked against          manifest fetched 9m ago
+
+Install
+  Install method           uv-tool
+  Claude Code CLI          ok (2.1.257)
+
+Account
+  Logged in as             you@example.com
+  Endpoint                 https://api.research.prbe.ai
+  Saved account            default
+
+CLI + MCP
+  Plugin                   probe-research
+  Status                   ok
+
+Session capture
+  Plugin                   probe-research-tap
+  Status                   capturing
+  Paired device            c06294bd3f584a8cbc1f74b74000b475
+  Credential from          probe CLI config (ingest_token)
+
+Agent rules
+  Global CLAUDE.md         installed
+
+Team note
+  Local file               ~/.local/state/probe/team-note/probe-team-note.md
+  Synced version           831
+  Unsynced edits           none
+
+Auto-update
+  Enabled                  yes
+  Last attempt             success -> CLI 0.172.0, plugin probe-research=0.90.0 (2026-09-17 22:01)
+
+Outbox
+  Pending                  0
+  Dead-lettered            0
+```
+
+### The lines that actually answer questions
+
+<AccordionGroup>
+  <Accordion title="Checked against: manifest fetched Nh ago" icon="clock">
+    Versions are graded against a cached manifest. A comparison against a three-week-old manifest is not the same claim as a fresh one, so the age is printed. Past a day, "up to date" stops being a claim worth making plainly.
+  </Accordion>
+  <Accordion title="Last attempt" icon="arrows-rotate">
+    The single most useful line in the report. A detached auto-updater that has been silently failing looks identical to a working one from every other angle.
+  </Accordion>
+  <Accordion title="Credential from" icon="key">
+    Where the capture token actually resolved: the paired file, your environment, or the Probe config. "Capture is off" and "the paired file is gone but the environment still has a token" are different problems with the same appearance.
+  </Accordion>
+  <Accordion title="Outbox: pending / dead-lettered" icon="inbox">
+    Writes queue locally by default. A non-zero pending count means work is recorded but not yet delivered; dead-lettered means delivery failed permanently and needs a decision. See [the outbox](/cli/outbox).
+  </Accordion>
+  <Accordion title="Unsynced edits" icon="file-pen">
+    The team note is a local file that syncs both ways. Unsynced edits are yours, not yet pushed.
+  </Accordion>
+</AccordionGroup>
+
+## Common states and what they mean
+
+| What you see | What it means |
+|---|---|
+| Plugin installed, `Status` not ok | Installed but signed out, or the agent's own version predates a flag the plugin needs |
+| Capture `off (killswitch set)` | A killswitch file is present. Settings will not override it |
+| Versions empty / "could not check" | The cached manifest is unreadable — not good news, and not reported as such |
+| `Claude Code CLI` missing a version | An older agent binary. Some imports fail on flags a newer one has |
+
+<Warning>
+On pi, working MCP tools do not prove capture is running. A settings file can carry the package with no extensions: skills and the MCP manifest load, `index.ts` does not, and tracking reads as on while no daemon spawns. `probe doctor` names that state explicitly — trust it over the fact that tools appear to work.
+</Warning>
+
+## Do it by hand
+
+```bash
+probe wizard --action manual
+```
+
+Prints every command the wizard runs, for the agents you name. It is generated from the same constants the wizard uses, so it cannot drift from what the wizard does. Deliberately not in the menu — it is the rarest path, and it is what air-gapped installs use.
+
+## Uninstalling
+
+```bash
+npx probe-research            # → Uninstall Probe
+probe wizard --action uninstall
+```
+
+It stops capture and imports, clears local import history, removes the plugins and signs this device out — the tokens saved here are revoked, so setting Probe up again will ask you to sign in.
+
+**Nothing already sent to your team's knowledgebase is touched.** Uninstalling a client does not delete data.
+
+To keep the plugins and only drop the credentials, use **Sign out** instead. To turn capture off and keep everything else, use [Settings](/wizard/settings) — `--uninstall` is the flag that makes a capture-off also remove the plugin, and it is off by default.

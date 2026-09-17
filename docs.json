@@ -27,7 +27,8 @@
           "wizard/install",
           "wizard/import",
           "wizard/imports",
-          "wizard/account"
+          "wizard/account",
+          "wizard/diagnose"
         ]
       },
       {
