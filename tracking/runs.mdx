@@ -1,0 +1,124 @@
+---
+title: "Runs"
+description: "Open, hold, fork, wrap and close a run — and what happens when the process dies instead."
+icon: "play"
+---
+
+A run is one execution. Everything else — metrics, files, spans, code — hangs off it.
+
+## Opening one
+
+<CodeGroup>
+```python SDK
+import probe
+
+run = probe.init(project="folding", experiment="dockq", question="temp 0.7 wins")
+# or, with no ambient binding:
+client = probe.Client()
+run = client.run(project="folding", experiment="dockq", name="run-1")
+```
+
+```bash CLI
+RUN=$(probe run start --experiment dockq --project folding \
+        --name run-1 --description "DockQ baseline at temperature 0.7" \
+        --source runpod --external-id rp-9931 \
+        --config lr=3e-4 --config batch=64 --tag baseline)
+```
+</CodeGroup>
+
+<Warning>
+**The CLI never creates.** `probe run start` opens a run inside an experiment that already exists, or directly under a project. A slug that is a near-miss of an existing one is **refused**, not created — on the CLI the slug is hand-typed every time, and that is where typos come from. Use `probe project create` / `probe experiment create` explicitly.
+
+The SDK does create, because a training script should not fail on a missing row.
+</Warning>
+
+### Naming
+
+Omit `--name` and the server names the run after its slug, or after the petname it mints when there is none — then replaces that with a generated title once the run reaches a terminal status. **A name you supply is yours and is never overwritten.**
+
+### Project-direct runs
+
+Omit `--experiment` entirely. The run hangs off the project with no experiment in between. That is the honest home for work that has no hypothesis, and it is the shape a Weights &amp; Biases import lands in.
+
+## Relationships
+
+<CardGroup cols={3}>
+  <Card title="child" icon="sitemap">
+    ```bash
+    probe run child $RUN --name eval
+    ```
+    A sub-run nested under a parent.
+  </Card>
+  <Card title="fork" icon="code-branch">
+    ```bash
+    probe run fork $RUN --step 4000
+    ```
+    A new run continuing the source from a checkpoint step. **The source stays untouched.**
+  </Card>
+  <Card title="group" icon="layer-group">
+    ```bash
+    probe run start --group $GROUP
+    ```
+    A peer in a sweep, ensemble or distributed job.
+  </Card>
+</CardGroup>
+
+## Wrapping a command
+
+```bash
+probe exec --project folding -- python train.py --config dockq.yaml
+probe exec $RUN -- python train.py          # or attach to a run you already opened
+```
+
+`probe exec` opens the run itself, holds it with a heartbeat for as long as the child lives, and closes it from the child's **real exit code**. It hands the child `PROBE_RUN_ID` and `PROBE_RUN_EPOCH`, and `probe.init()` inside the job reads them and joins that same run — so wrapping a script that already calls `probe.init()` produces one run, not two.
+
+<Info>
+`sbatch`, `ray job submit` and `modal deploy` are detected. Those commands return as soon as the job is *submitted*, so recording the submitter's exit code as the job's outcome would be a lie. Probe opens the run **awaiting attach** instead, and the job claims it when it starts.
+</Info>
+
+## Closing one
+
+```bash
+probe run end $RUN --status completed      # completed | failed | canceled
+probe run check $RUN                       # capture completeness; exit 2 if incomplete
+```
+
+`probe run end` is the **delivery barrier**: it blocks until everything queued for that run has actually been delivered, unless you pass `--async`. That is what makes "the run is closed" mean "the data is there".
+
+From the SDK, `probe.finish()` does the same. A script that exits without calling it is still closed at exit as `completed`, `failed` or `canceled`.
+
+### When the process dies
+
+SDK-created runs heartbeat every 60 seconds, so the server can reap a run whose process vanished rather than leaving it `running` forever. Tune with `PROBE_HEARTBEAT_SECONDS`; `<=0` disables it.
+
+When a run crashes or fails, Probe emails a postmortem: a timeline of what the run's telemetry showed before it broke — step time, GPU temperature, loss spikes, memory pressure, learning-rate trouble — where in the execution it stopped (`training/epoch-7 > step 41300`) and the signal that ended it (`killed by SIGKILL`).
+
+## Reading runs back
+
+```bash
+probe get $RUN                      # the run record
+probe bundle $RUN                   # run + series + artifacts in one read
+probe run list --experiment dockq --tag baseline
+probe run series $RUN               # per-series summary: key/kind/dimensions + first/last/min/max
+probe run metrics $RUN              # raw points
+probe events $RUN                   # backend lifecycle events
+probe coordinates $RUN              # every coordinate any fact landed on
+```
+
+## Amending
+
+```bash
+probe run set $RUN --name "DockQ baseline" --description "Stable reference run"
+probe run set $RUN --summary @RUN.md
+probe link $RUN --set wandb_run_id=abc --set gpu_job=rp-9931
+```
+
+`probe link` attaches foreign keys under `metadata.foreign_keys` — how a Probe run stays joinable to the scheduler, tracker or ticket it came from.
+
+## Relaunching from a checkpoint
+
+```bash
+probe run start --external-id rp-9931 --rewind-to-step 4000
+```
+
+Rewind discards the incumbent run's record **from that step onward** and rewrites it, unlocking a completed incumbent to do so. Without the flag nothing is ever deleted — a re-push against an existing external id is rejected rather than allowed to overwrite history quietly.

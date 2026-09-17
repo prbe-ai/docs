@@ -36,7 +36,8 @@
         "group": "Tracking your work",
         "icon": "flask",
         "pages": [
-          "tracking/projects"
+          "tracking/projects",
+          "tracking/runs"
         ]
       },
       {
