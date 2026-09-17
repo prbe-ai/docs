@@ -28,7 +28,8 @@
           "wizard/import",
           "wizard/imports",
           "wizard/account",
-          "wizard/diagnose"
+          "wizard/diagnose",
+          "wizard/flags"
         ]
       },
       {

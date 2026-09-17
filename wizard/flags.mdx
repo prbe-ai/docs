@@ -1,0 +1,95 @@
+---
+title: "Unattended use"
+description: "Every wizard capability as a flag, for CI, fleet provisioning and headless machines."
+icon: "code"
+---
+
+The menu is a front end over the flags, not the other way round. Anything you can do on a screen you can do in a script.
+
+```bash
+probe wizard [AUTH_CODE] [OPTIONS]
+```
+
+<Warning>
+**An omitted flag preserves whatever is already configured.** This is the property the whole design turns on: `probe wizard --yes` in CI can never silently revoke someone's capture pairing, because it only changes what you named.
+</Warning>
+
+## Options
+
+| Flag | Effect |
+|---|---|
+| `--agent <name>` | `claude`, `codex`, `pi`, or `both` (claude + codex). Default: choose interactively |
+| `--tracking` / `--no-tracking` | Research tracking skills and the read-only MCP search surface |
+| `--capture` / `--no-capture` | Stream the selected agents' sessions to the knowledgebase |
+| `--auto-update` / `--no-auto-update` | Keep the CLI and plugins current in the background |
+| `--agent-rules` / `--no-agent-rules` | Managed Probe block in each selected agent's global instructions |
+| `--uninstall` | When turning capture off, also remove the plugin (default: keep it) |
+| `--action <name>` | Skip the menu — see below |
+| `--folder <path>` | Backfill only: the folder to import, skipping the picker. Required headless |
+| `-y`, `--yes` | Skip the menu and prompts |
+
+### Actions
+
+`--action` jumps straight to one screen or lane:
+
+| Action | Opens |
+|---|---|
+| `configure` | The guided install (what `probe install` aliases) |
+| `account` | The account screen |
+| `login` / `logout` | Sign in / sign out, without prompting |
+| `settings` | The settings screen |
+| `uninstall` | Remove Probe from this device |
+| `import-research` | The import offer: sessions, a folder, or both |
+| `backfill` | The folder import lane directly |
+| `transcripts` | The session import lane directly |
+| `imports` | Existing imports |
+| `update` | Update the CLI and plugins |
+| `diagnose` | The `probe doctor` report |
+| `manual` | Print every command the wizard would run |
+
+A positional `AUTH_CODE` is the ten-character sign-in code from the website; pass it to authorize without the browser handshake.
+
+## Recipes
+
+<CodeGroup>
+```bash Provision a shared build machine
+# Tracking and updates on, capture explicitly off — a shared box
+# should not be uploading anybody's prompts.
+probe wizard --action configure \
+  --agent both --tracking --no-capture --auto-update --yes
+```
+
+```bash Turn one capability off, change nothing else
+probe wizard --no-capture --yes
+```
+
+```bash Headless folder import
+probe wizard --action backfill --folder /srv/work/folding --yes
+```
+
+```bash Check a fleet without changing it
+probe doctor        # read-only, exits 0 regardless — parse the report
+```
+
+```bash Tear down
+probe wizard --action uninstall --yes
+```
+</CodeGroup>
+
+## Headless notes
+
+- **A folder import needs `--folder`.** Without it the wizard opens a picker, which needs a TTY.
+- **Set `PROBE_TOKEN` in CI** rather than relying on the inline browser approval. Auto-login is TTY-only; headless callers get a clean `AuthError`. `PROBE_AUTO_LOGIN=0` disables the inline path explicitly.
+- **Capture is per-device.** Provisioning a fleet from one image does not share one pairing — each machine authorizes itself.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Completed |
+| `1` | Failed — the reason is printed |
+| `2` | Unknown command or bad arguments |
+
+<Card title="Diagnose and repair" icon="stethoscope" href="/wizard/diagnose">
+  What to check when an unattended install did not take.
+</Card>
