@@ -63,6 +63,7 @@
         "pages": [
           "cli/overview",
           "cli/auth",
+          "cli/commands",
           "cli/outbox"
         ]
       },
