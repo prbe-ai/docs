@@ -11,13 +11,15 @@
   "navigation": {
     "pages": [
       {
-        "group": "Getting Started",
+        "group": "Getting started",
         "pages": [
           "index",
+          "installation",
           "quickstart",
-          "concepts",
-          "installation"
-        ]
+          "concepts"
+        ],
+        "icon": "flag",
+        "expanded": true
       },
       {
         "group": "Setup wizard",
@@ -31,7 +33,8 @@
           "wizard/account",
           "wizard/diagnose",
           "wizard/flags"
-        ]
+        ],
+        "expanded": true
       },
       {
         "group": "Tracking your work",

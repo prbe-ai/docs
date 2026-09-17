@@ -1,12 +1,61 @@
 ---
 title: "Quickstart"
-description: "Install Probe, sign in, and record a run you can open in the dashboard."
+description: "Set Probe up with the wizard, then record a run you can open in the dashboard."
 icon: "rocket"
 ---
 
-Two paths, depending on what you want first. They are not exclusive — most people do both within a day.
+Start with the wizard. It is the shortest path in, and it is the only step that needs doing once per machine.
 
 <Tabs>
+  <Tab title="Set up with the wizard">
+    <Steps>
+      <Step title="Run it">
+        ```bash
+        npx probe-research install
+        ```
+
+        No prior install needed — `npx` fetches the launcher, which resolves the real CLI. The wizard signs you in through the browser, then walks four screens: pick your coding agents, review what will be set up, install, and offer to import work you already have.
+
+        <Info>
+          Add `--agent codex` to set up Codex instead of (or as well as) Claude Code. `--agent both` does both. Everything the menu offers is also a flag — see [unattended use](/wizard/flags).
+        </Info>
+      </Step>
+      <Step title="Confirm it took">
+        ```bash
+        probe doctor
+        ```
+
+        Read-only. It prints what is installed, which credentials resolve, whether auto-update is working, and when the last update attempt was.
+
+        In Claude Code, `probe statusline install` adds a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
+      </Step>
+      <Step title="Use it">
+        In your agent, the switch is `/probe`:
+
+        ```text
+        /probe on      reads and writes
+        /probe read    search yes, record no
+        /probe off     no calls at all
+        ```
+
+        With the switch on, the agent records work as it happens through the `/track-work` skill. It can also search your lab's history read-only at any time through the [MCP server](/agents/mcp).
+      </Step>
+      <Step title="Bring your history with you">
+        From the wizard's main menu, choose **Import research work** — or run it directly:
+
+        ```bash
+        probe backfill /path/to/project --project existing-project
+        probe backfill --transcripts-only
+        ```
+
+        Folder imports read the directory, upload what they find and describe it. Session imports pull saved coding-agent transcripts into the knowledgebase. Both run in the background and survive a terminal disconnect.
+      </Step>
+    </Steps>
+
+    <Card title="The wizard in full" icon="wand-magic-sparkles" href="/wizard/overview">
+      Every screen, every menu row, and the flags behind them.
+    </Card>
+  </Tab>
   <Tab title="Record a training run">
     <Steps>
       <Step title="Install the client">
@@ -54,51 +103,6 @@ Two paths, depending on what you want first. They are not exclusive — most peo
         ```bash
         probe metrics plot $RUN_ID --key train/loss
         ```
-      </Step>
-    </Steps>
-  </Tab>
-  <Tab title="Set up a coding agent">
-    <Steps>
-      <Step title="Run the wizard">
-        ```bash
-        npx probe-research install
-        ```
-
-        No prior install needed — `npx` fetches the launcher, which resolves the real CLI. The wizard signs you in through the browser, then walks four screens: pick your coding agents, review what will be set up, install, and offer to import work you already have.
-
-        <Info>
-          Add `--agent codex` to set up Codex instead of (or as well as) Claude Code. `--agent both` does both.
-        </Info>
-      </Step>
-      <Step title="Confirm it took">
-        ```bash
-        probe doctor
-        ```
-
-        Read-only. It prints what is installed, which credentials resolve, whether auto-update is working, and when the last update attempt was.
-
-        In Claude Code, `probe statusline install` adds a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
-      </Step>
-      <Step title="Use it">
-        In your agent, the switch is `/probe`:
-
-        ```text
-        /probe on      reads and writes
-        /probe read    search yes, record no
-        /probe off     no calls at all
-        ```
-
-        With the switch on, the agent records work as it happens through the `/track-work` skill. It can also search your lab's history read-only at any time through the [MCP server](/agents/mcp).
-      </Step>
-      <Step title="Bring your history with you">
-        From the wizard's main menu, choose **Import research work** — or run it directly:
-
-        ```bash
-        probe backfill /path/to/project --project existing-project
-        probe backfill --transcripts-only
-        ```
-
-        Folder imports read the directory, upload what they find and describe it. Session imports pull saved coding-agent transcripts into the knowledgebase. Both run in the background and survive a terminal disconnect.
       </Step>
     </Steps>
   </Tab>
