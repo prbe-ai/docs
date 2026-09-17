@@ -11,13 +11,15 @@
   "navigation": {
     "pages": [
       {
-        "group": "Getting Started",
+        "group": "Getting started",
         "pages": [
           "index",
+          "installation",
           "quickstart",
-          "concepts",
-          "installation"
-        ]
+          "concepts"
+        ],
+        "icon": "flag",
+        "expanded": true
       },
       {
         "group": "Setup wizard",
@@ -31,7 +33,8 @@
           "wizard/account",
           "wizard/diagnose",
           "wizard/flags"
-        ]
+        ],
+        "expanded": true
       },
       {
         "group": "Tracking your work",
@@ -127,16 +130,10 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "href": "https://research.prbe.ai",
-        "label": "Dashboard"
-      }
-    ],
     "primary": {
       "type": "button",
-      "label": "Sign in",
-      "href": "https://research.prbe.ai/sign-in"
+      "label": "Dashboard",
+      "href": "https://research.prbe.ai"
     }
   },
   "contextual": {

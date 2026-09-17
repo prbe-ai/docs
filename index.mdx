@@ -5,41 +5,54 @@ description: "The system of record for everything your team does in ML — runs,
 icon: "house"
 ---
 
-Probe Research records the work, not just the numbers. A training run and its loss curve, yes — but also the eval sweep, the dataset pass, the literature review, the design decision someone made on a Tuesday, and the coding-agent session where all of it actually happened. It keeps them in one place, links them together, and makes them searchable by meaning.
+Probe Research records the work, not just the numbers. A training run and its loss curve, yes — but also the eval sweep, the dataset pass, the literature review, the design decision someone made on a Tuesday, and the coding-agent session where all of it actually happened.
 
-<CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Install, sign in, and record your first run in about five minutes.
-  </Card>
+## Start here
 
-  <Card title="Core concepts" icon="diagram-project" href="/concepts">
-    Workspaces, projects, experiments, runs, artifacts, notes — and how they nest.
-  </Card>
+One command sets Probe up on this machine. It signs you in, installs what your coding agents need, and offers to import the work you have already done.
 
-  <Card title="The setup wizard" icon="wand-magic-sparkles" href="/wizard/overview">
-    `npx probe-research` installs, imports, configures and diagnoses everything.
-  </Card>
+```bash
+npx probe-research install
+```
 
-  <Card title="Python SDK" icon="python" href="/sdk/quickstart">
-    Three lines in a training script: `probe.init`, `probe.log`, `probe.finish`.
-  </Card>
-</CardGroup>
+<Card title="Walk through the setup wizard" icon="wand-magic-sparkles" horizontal href="/wizard/overview">
+  Four screens, about two minutes. Then everything below is available to you.
+</Card>
+
+<Steps>
+  <Step title="Sign in" icon="key">
+    The wizard opens your browser and you approve the device there. Nothing to paste.
+  </Step>
+  <Step title="Pick your coding agents" icon="robot">
+    Claude Code, Codex, pi — or several. Detected ones are pre-ticked.
+  </Step>
+  <Step title="Review and install" icon="clipboard-check">
+    Exactly what will be set up, in plain terms, before anything happens.
+  </Step>
+  <Step title="Import what you already have" icon="box-archive">
+    Saved coding sessions, a folder of project work, or both. Nothing uploads without your say-so.
+  </Step>
+</Steps>
+
+<Info>
+  Only instrumenting a training script, with no coding agent involved? `pip install probe-research` and go straight to the [SDK quickstart](/sdk/quickstart).
+</Info>
 
 ## Three ways in, one backend
 
 Probe has three write surfaces. They are not alternatives to each other — most teams use all three, because they cover different moments.
 
 <CardGroup cols={3}>
-  <Card title="Python SDK" icon="code" href="/sdk/quickstart">
+  <Card title="Agent plugin" icon="robot" href="/agents/overview">
+    **From a coding agent.** Skills that teach Claude Code or Codex the workflow, plus a read-only MCP server so the agent can query lab history.
+  </Card>
+
+  <Card title="Python SDK" icon="python" href="/sdk/quickstart">
     **From inside running code.** Metrics and spans as a training or eval script executes. The replacement for a `wandb.init()` call.
   </Card>
 
   <Card title="CLI" icon="terminal" href="/cli/overview">
     **From a shell.** Register projects and runs, attach files, write notes, import history, read anything back.
-  </Card>
-
-  <Card title="Agent plugin" icon="robot" href="/agents/overview">
-    **From a coding agent.** Skills that teach Claude Code or Codex the workflow, plus a read-only MCP server so the agent can query lab history.
   </Card>
 </CardGroup>
 
@@ -92,19 +105,19 @@ That is what makes the rest worth doing: a run you recorded in March is findable
 ## Where to go next
 
 <CardGroup cols={2}>
-  <Card title="I want to record a training run" icon="play" href="/sdk/quickstart">
-    Start with the Python SDK.
+  <Card title="Core concepts" icon="diagram-project" href="/concepts">
+    Workspaces, projects, experiments, runs — and how they nest.
   </Card>
 
-  <Card title="I want my coding agent to track work" icon="wand-magic-sparkles" href="/wizard/overview">
-    Run the setup wizard.
+  <Card title="Record a training run" icon="play" href="/sdk/quickstart">
+    Three lines: `probe.init`, `probe.log`, `probe.finish`.
   </Card>
 
-  <Card title="I have history in Weights & Biases" icon="right-left" href="/integrations/wandb">
-    Import it.
+  <Card title="Import from Weights & Biases" icon="right-left" href="/integrations/wandb">
+    Local run directories or a hosted project.
   </Card>
 
-  <Card title="I need to run this on our own cluster" icon="server" href="/deploy/self-host">
+  <Card title="Run it on our own cluster" icon="server" href="/deploy/self-host">
     Self-host from the same Helm chart.
   </Card>
 </CardGroup>
