@@ -1,0 +1,59 @@
+---
+title: "GitHub"
+description: "Send selected repositories to team Knowledge, and attach repos to projects for a read-through commit timeline."
+icon: "github"
+---
+
+GitHub is a **knowledge source**. Connecting it sends the repositories you select into team Knowledge, so code and its history are searchable next to runs, notes and sessions.
+
+## Connecting
+
+Install the Probe GitHub App from the **Integrations** page and choose which repositories it can see. Webhooks terminate on the Probe API; nothing is mirrored into a separate store.
+
+Scope is a list of `owner/repo` entries, up to 500. GitHub content lands in team **Knowledge**, not in a workspace.
+
+<Note>
+**Connecting GitHub is generally available to every team.** Some accounts gate the project **Code tab** behind a per-user flag, but the connection itself, the webhook that feeds content to the index, and the published README read are never gated.
+
+A gated route answers 404 rather than 403, so the gate does not advertise a feature you cannot use — and the dashboard omits the surfaces instead of drawing controls that would only 404.
+</Note>
+
+## Attaching a repo to a project
+
+```bash
+probe project code list folding
+probe project code attach folding --repo owner/name
+probe commits folding                    # one page of the timeline, newest first
+```
+
+The commit timeline is read **through** GitHub by the backend. Nothing is copied, so attaching is cheap and detaching loses nothing.
+
+## READMEs on project pages
+
+A line containing only
+
+```
+[README](https://github.com/owner/repo)
+```
+
+in a project, experiment or run Overview embeds that repository's README at that point.
+
+<Warning>
+That embed is served on the **published** page too. A private repository's README in a published Overview is visible to anyone with the link — a publisher must never have less access to their own published content than an anonymous visitor, and the corollary is that the visitor sees what you embedded.
+</Warning>
+
+## Backfill from a checkout
+
+When you point [`probe backfill`](/integrations/backfill) at a folder that is a GitHub checkout, it recognises this: it checks the existing integration's access, uses bounded commit history as context for describing the work, and reuses or attaches the corresponding code source after placement review.
+
+File and Git reconstruction drafts are saved for **explicit publication review** — the agent's reading of a repository is a draft, not a published document.
+
+## Disconnecting
+
+Disconnecting clears both stores before releasing the claim: the installation-owned search data by scoped purge, and Probe's own stored README snapshots with their uploaded figures.
+
+The order is load-bearing — the claim row is what makes the endpoint reachable *and* what resolves a later revocation webhook, so releasing first would strand the stored content. A failure before the release leaves the integration connected and the disconnect retryable.
+
+A GitHub-side uninstall follows the same rule and stays redeliverable until the scoped purge verifies.
+
+Documents owned by a different installation, and unbound legacy documents, are **preserved** — the purge preview reports that caveat. There is never a source-wide purge fallback.

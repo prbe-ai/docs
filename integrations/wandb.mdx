@@ -1,0 +1,78 @@
+---
+title: "Weights & Biases"
+description: "Import local run directories or a hosted project, and what source-backed runs keep at W&B."
+icon: "chart-line"
+---
+
+Three ways in, depending on where the runs are.
+
+## Local run directories
+
+For the `wandb/` trees sitting on a machine or a shared volume.
+
+```bash
+probe wandb discover /srv/work                       # what is there, and the tier each would import at
+probe wandb import-local /srv/work --project folding --dry-run
+probe wandb import-local /srv/work --project folding
+```
+
+`discover` is worth running first: it lists every W&amp;B run directory under the root and the fidelity each would import at, so a tree with partial data does not surprise you afterwards.
+
+<Note>
+`--project` names an **existing** Probe project and is required. A W&amp;B project does not map one-to-one onto a Probe project — forcing that guess is how imports end up in the wrong place — and this step runs after a file import, so the destination already exists.
+</Note>
+
+## A hosted project
+
+```bash
+probe wandb key set          # stored in the active context
+probe wandb key status       # whether a key is configured and where from. Never prints it
+
+probe wandb import-hosted my-team my-wandb-project --project folding --dry-run
+probe wandb import-hosted my-team my-wandb-project --project folding
+probe wandb import-hosted my-team my-wandb-project --project folding --run abc123 --run def456
+```
+
+`--dry-run` reports the plan and writes nothing. Use it.
+
+## One run's history into an existing Probe run
+
+```bash
+probe import wandb --wandb-run abc123 --run $RUN
+```
+
+Mirrors one W&amp;B run's metric history into a Probe run you already have — for when the Probe run was opened by your own tooling and the curve lives at W&amp;B.
+
+## A live connection
+
+On the **Integrations** page, a W&amp;B connection gets its own **named team workspace** and independent **Live sync** and **Backfill** controls.
+
+<Warning>
+**Live sync has a cutoff.** It covers runs created after you activated it. A run that already existed is history — use backfill for it.
+
+This matters when testing: attaching to a run that has already finished tests backfill, not live sync. Watch the connection's last-sync time rather than inferring from whether rows appeared.
+</Warning>
+
+## Source-backed runs
+
+An imported run can stay **source-backed**: its metric history remains at W&amp;B rather than being copied wholesale. Authenticated chart reads then fetch bounded ranges on demand and **label partial or sampled coverage explicitly** — a chart that is showing you a window says so rather than implying it is the whole curve.
+
+## Timestamps
+
+<Warning>
+Imported runs carry **backdated** wall clocks where the source supplied them. Rows with no timestamp at all are skipped rather than stamped with the import time — so an imported history does not appear to have all happened on the afternoon you imported it.
+
+If you are writing your own importer against the SDK, pass `wall_clock` explicitly. Omitted, it stamps at ingest time, which is right for a live loop and wrong for a replay.
+</Warning>
+
+## Folder imports that include W&amp;B
+
+The [wizard's folder import](/wizard/import) can do both in one pass: select or create the destination Probe project up front — it covers the files and the W&amp;B history together — then scanning and importing run in the background with no later file-plan review.
+
+## What it does not do
+
+Probe does not write back to W&amp;B. The import is one-directional.
+
+<Card title="Instrumenting new runs instead" icon="python" href="/sdk/quickstart">
+  For runs you have not launched yet, `probe.init()` replaces `wandb.init()`.
+</Card>

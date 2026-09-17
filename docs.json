@@ -91,7 +91,9 @@
         "group": "Integrations and imports",
         "icon": "right-left",
         "pages": [
-          "integrations/overview"
+          "integrations/overview",
+          "integrations/wandb",
+          "integrations/github"
         ]
       },
       {
