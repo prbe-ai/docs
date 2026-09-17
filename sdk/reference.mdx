@@ -1,0 +1,116 @@
+---
+title: "API reference"
+description: "Client and Run methods, what each one writes, and the endpoint behind it."
+icon: "book"
+---
+
+## Module level
+
+The ambient surface. Every one of these resolves the run bound by `probe.init()`.
+
+| Call | Does |
+|---|---|
+| `probe.init(**kw)` | Open or resolve a run and bind it. Returns a `Run` |
+| `probe.log(metrics, **kw)` | Append metric points to the active run |
+| `probe.log_hw(metrics, **kw)` | Hardware metrics, on the `hardware` kind |
+| `probe.log_artifact(name, **kw)` | Record an artifact on the active run |
+| `probe.span(span_type, **kw)` | Open a span. The handle is a context manager |
+| `probe.active_run()` | The current binding, or `None` |
+| `probe.finish(status=...)` | Close the run and flush |
+
+## `Client`
+
+```python
+client = probe.Client(base_url=..., token=...)   # both default from config and env
+```
+
+| Method | Purpose |
+|---|---|
+| `client.run(...)` | Resolve or create a run. `question=` opts into creating the experiment |
+| `client.run_bundle(run_id)` | Run, series and artifacts in one read |
+| `client.run_series(run_id)` | One row per series — the shape check worth asserting |
+| `client.run_lineage(run_id)` | Lineage edges around a run |
+| `client.list_runs(...)` | Filter by experiment, group, project, tags |
+| `client.list_run_artifacts(run_id, kind=..., step_from=..., step_to=...)` | Artifacts on a run |
+| `client.list_run_artifact_tree(run_id, prefix=..., limit=...)` | One folder level |
+| `client.list_anchored(anchor, prefix=...)` | Artifacts at a non-run anchor |
+| `client.list_artifact_versions(name, ...)` | The version chain |
+| `client.presign_download_batch(...)` | Signed GETs for many artifacts |
+| `client.compare(experiment_id=..., keys=[...])` | N runs aligned on step |
+| `client.search(...)` | The one-index search door |
+| `client.browse(...)` | The structured project → experiment → run tree |
+| `client.events.add(run_id, kind, text, evidence_refs=[...])` | A structured research event |
+| `client.check_run(run_id)` | Capture-completeness report |
+| `client.promote(...)` | Promote an artifact to the shared level |
+| `client.ingest(...)` | Idempotent passive push — see [integrations](/sdk/integrations) |
+
+## `Run`
+
+| Method | Purpose |
+|---|---|
+| `run.log(metrics, step=, kind=, dimensions=, labels=, span_id=, agg=, wall_clock=, strict=)` | Append metric points |
+| `run.log_hw(metrics, **kw)` | Hardware rail |
+| `run.unit(coords=, labels=)` | Context manager binding ambient coordinates and labels |
+| `run.span(span_type, name=, step_index=)` | Open a span; nests; closes with a terminal status |
+| `run.step(...)` | Record a step's non-numeric values |
+| `run.log_artifact(name, uri=, kind=, step=, ...)` | Record a file |
+| `run.snapshot(...)` | Code, environment and hardware capture |
+| `run.link(**foreign_keys)` | Merge into `metadata.foreign_keys` |
+| `run.execute(argv)` | Run a child process under this run |
+| `run.child(...)` / `run.fork(step=...)` | Sub-run / continuation |
+| `run.finish(status=...)` | Flush and close |
+
+### `log` parameters
+
+| Parameter | Notes |
+|---|---|
+| `step` | Omit to auto-increment per kind; `None` for a wall-clock axis |
+| `kind` | Default `model`. Use another to keep a high-cardinality cloud off the run page |
+| `dimensions` | Up to 8 low-cardinality grouping keys. **Widens the series** |
+| `labels` | Up to 32 per-sample identity keys. Point identity only |
+| `span_id` | Exemplar pointer to the span the value came from |
+| `agg` | `mean` / `sum` / `min` / `max` / `count` — declares the reduction |
+| `wall_clock` | Omitted means stamped at ingest time. Pass it when replaying history |
+| `strict` | `True` raises instead of spooling |
+
+A key present in both `dimensions` and `labels` raises `ValueError`. See [metrics](/tracking/metrics) for how to choose between them.
+
+## What maps to what
+
+| Client call | Endpoint |
+|---|---|
+| `client.run()` / `run.child()` | `POST /v1/experiments`, `POST /v1/experiments/{id}/runs` |
+| `run.log()` / `run.log_hw()` | `POST /v1/runs/{id}/metrics`, and `/steps` for non-numeric values |
+| `run.span()` / `run.step()` | `POST /v1/runs/{id}/spans` or `/steps` |
+| `run.log_artifact()` | `POST /v1/runs/{id}/artifacts` |
+| `run.snapshot()` | `POST /v1/execution-records`, then batched artifact uploads and confirms |
+| `run.link()` | `PATCH /v1/runs/{id}` (merges `metadata.foreign_keys`) |
+| `run.finish()` | `PATCH /v1/runs/{id}` |
+| `client.events.add()` | `POST /v1/runs/{id}/artifacts` with `kind=research_event` |
+| `client.run_bundle()` / `run_lineage()` | `GET /v1/runs/{id}/bundle` or `/lineage` |
+| `client.ingest()` | `POST /ingest/v1/runs` |
+| `client.search()` | `POST /v1/search` |
+| `client.list_run_artifact_tree()` | `GET /v1/runs/{id}/artifacts/tree` |
+| `client.presign_download_batch()` | `POST /v1/artifacts/download/batch` |
+
+## Typed models
+
+Request and response models are generated from the OpenAPI contract, so schema drift fails at the call site rather than as a server 422.
+
+```python
+from probe.models import MetricPointIn, MetricBatch
+```
+
+## Errors
+
+| Exception | Raised when |
+|---|---|
+| `AuthError` | No credential resolves, or the server rejects it |
+| `CapabilityUnavailable` | The backend does not offer this capability — engine-off search, for example |
+| `RosError` | Base class for client errors |
+
+Data writes do not raise by default — they spool. Everything else does.
+
+<Card title="Environment variables" icon="gear" href="/reference/environment">
+  Every variable the SDK, CLI and MCP read, and what each overrides.
+</Card>
