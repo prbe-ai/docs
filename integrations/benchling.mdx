@@ -1,0 +1,45 @@
+---
+title: "Benchling"
+description: "Bring notebook entries from selected Benchling projects into a named team workspace."
+icon: "flask"
+---
+
+Connect Benchling from the **Integrations** page. Notebook entries from the projects you select become searchable content in Probe, filed in a dedicated team workspace.
+
+## Setup
+
+<Steps>
+  <Step title="Connect">
+    Authorize the connection from the Integrations page.
+  </Step>
+  <Step title="Name the workspace">
+    Connecting asks for the workspace name, prefilled with the source and editable. The slug is derived — lowercased, hyphenated, suffixed if taken.
+  </Step>
+  <Step title="Select projects">
+    Choose which Benchling projects are in scope. The connector queries per project rather than sweeping everything.
+  </Step>
+  <Step title="Turn on live sync">
+    New entries flow in as they appear.
+
+    <Info>
+    Enabling live sync **automatically queues a history pass** over your selected projects, so existing notebook entries appear immediately. There is no separate backfill verb to remember.
+    </Info>
+  </Step>
+</Steps>
+
+## Write-back
+
+Writing generated prose back into custom entity fields is **opt-in per connection** and off by default.
+
+<Warning>
+Benchling is a customer's system of record. Pushing generated content into it is a decision a person makes deliberately, per connection — not a default, and not something an agent turns on.
+</Warning>
+
+## Scope and shape
+
+- Items carry their folder id; the connector queries by project id rather than by a global sweep.
+- Content lands in the named workspace as searchable documents, alongside everything else in [Knowledge](/dashboard/search).
+
+## Disconnecting
+
+As with every connector, disconnecting purges the installation's own content before releasing the claim. Shared documents owned by a different installation are preserved, and the purge preview says so. Missing engine configuration is reported as an error rather than treated as proof of an empty index.
