@@ -38,7 +38,8 @@
         "pages": [
           "tracking/projects",
           "tracking/runs",
-          "tracking/metrics"
+          "tracking/metrics",
+          "tracking/artifacts"
         ]
       },
       {

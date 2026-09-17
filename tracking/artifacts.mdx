@@ -1,0 +1,128 @@
+---
+title: "Artifacts and files"
+description: "Record files against a run, project, workspace or the team's Shared folder — uploaded or by reference."
+icon: "folder"
+---
+
+An artifact is a file with an **anchor**. The anchor is what makes artifacts useful rather than a dumping ground: it says which question the file belongs to.
+
+```bash
+probe artifact add $RUN ./final.sif --kind artifact --step 4000
+probe artifact add ./dataset.parquet --project folding --notes "held-out val split, 12k rows"
+probe artifact add ./figure.png --experiment dockq
+probe artifact add ./notes.md --workspace engineering
+probe artifact add ./tokenizer.json --shared
+```
+
+| Anchor | Flag | Use it for |
+|---|---|---|
+| run | *positional run id* | Checkpoints, outputs, logs, captured code |
+| experiment | `--experiment` | Something belonging to the question, not one execution |
+| project | `--project` | Datasets, reference material, figures |
+| workspace | `--workspace` | Files filed on the shelf, under no project |
+| shared | `--shared` | The team's lab-wide, promoted level |
+
+<Tip>
+`--notes` is worth writing every time. It is the field that answers "what is this file, what produced it, what does it show" — and it works on every anchor. A directory of `final_v3_actually_final.ckpt` is what happens without it.
+</Tip>
+
+## Bytes, or a pointer to them
+
+Not everything should be uploaded. Probe records three postures, and never silently converts one into another.
+
+<AccordionGroup>
+  <Accordion title="Upload (default)" icon="cloud-arrow-up">
+    The bytes go to object storage, content-addressed and deduplicated by SHA-256 across runs.
+  </Accordion>
+  <Accordion title="Reference a local path" icon="link">
+    ```bash
+    probe artifact add $RUN /shared/ckpt/step-4000.pt --reference --hash
+    ```
+
+    Records the file's **path** (`file://`) instead of its bytes — for large files on a shared volume the reader can resolve locally. `--hash` reads the whole file to fingerprint it, which enables dedup. `--allow-missing` records a reference even if the path is not visible from this host.
+  </Accordion>
+  <Accordion title="Reference an object you already store" icon="bucket">
+    ```bash
+    probe artifact add $RUN --uri s3://my-bucket/ckpt/step-4000.pt --name ckpt/step-4000.pt
+    ```
+
+    The pointer and checksum live in Probe; the bytes never leave your bucket. This is what makes air-gapped and data-residency installs work.
+  </Accordion>
+</AccordionGroup>
+
+## Bulk import
+
+```bash
+probe artifact add $RUN --from-manifest files.jsonl --reference-over 104857600
+```
+
+One JSON object per line, each the row form of the same flags. It is one process, one anchor resolution and N files queued — not N invocations. `--reference-over` records anything at or over that size as a reference instead of uploading it.
+
+## Naming
+
+`--name` is the file's **relative path**, defaulting to its basename. Paths are what give the explorer its folder structure, so pass a real one for captured trees:
+
+```bash
+probe artifact add $RUN ./out/figures/loss.png --name figures/loss.png
+```
+
+<Note>
+The file's extension is kept whatever you pass. Say what the file *is* with `--notes`, not by renaming it — a `.json` renamed to `.ckpt` is a file nothing can open.
+</Note>
+
+## Versions
+
+```bash
+probe artifact version-add <name> ./final-v2.sif
+probe artifact versions <name>
+probe artifact versions <name> --requirement ">=2"
+probe artifact pin-impact <name>          # which projects and experiments pin these versions
+```
+
+Versions are a **chain**, matched on monotonic integers and labels — not semver. `">=2.0"` is rejected rather than silently matching nothing.
+
+<Warning>
+Artifacts do **not** supersede by name. Two artifacts with the same name coexist and are ordered newest-first by creation time. A name carried by more than one shared artifact is an error naming both ids, because the duplication the reuse check exists to prevent has already happened and picking one silently would compound it.
+</Warning>
+
+## Listing and fetching
+
+```bash
+probe artifact list $RUN
+probe artifact list --project folding
+probe artifact tree $RUN --prefix figures/ --limit 50
+probe artifact download <id> --out ./local.sif
+```
+
+`tree` returns **one folder level**: the files at that path, plus each child folder with its file count. That is what the dashboard explorer fetches when you expand a folder, so a run with thousands of captured files costs one small answer per folder rather than one enormous answer per run.
+
+## The team's Shared folder
+
+One per team, distinct from workspaces, and it never holds projects or experiments. Every member sees everything in it.
+
+```bash
+probe shared list
+probe shared add ./tokenizer.json              # straight into Shared
+probe shared share <artifact-id>               # move one of your workspace files in
+probe shared unshare <artifact-id>             # move it back to a workspace
+probe shared download <artifact-id>
+probe shared delete <artifact-id>              # soft delete, recoverable
+```
+
+Sharing **re-anchors** the artifact row rather than copying it: the file leaves its workspace and appears in Shared, keeping its id and its provenance. Any member with write access may share any workspace file. A name collision in Shared is an error by default; `--replace` supersedes the prior shared file atomically.
+
+Shared is also the level artifact **reuse** resolves against — when an agent asks "is there already an official tokenizer for this", it is asking Shared.
+
+## Housekeeping
+
+```bash
+probe artifact move <id> --project folding     # change anchor, keep the id
+probe artifact gc-uploads                      # sweep uploads that were never confirmed
+probe artifact delete <id>
+```
+
+`gc-uploads` only touches abandoned, never-confirmed uploads. Confirmed artifacts are untouched.
+
+<Warning>
+`probe artifact delete` is permanent and needs a credential with the `delete` scope.
+</Warning>
