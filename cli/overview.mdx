@@ -1,0 +1,111 @@
+---
+title: "CLI overview"
+sidebarTitle: "Overview"
+description: "Grammar, how to address an entity, and why most writes return before the server answers."
+icon: "terminal"
+---
+
+```bash
+probe --help
+```
+
+The CLI is a thin shell over [the SDK](/sdk/quickstart) — same implementation, different ergonomics, so the two have capability parity.
+
+## Grammar
+
+Connection flags are **global** and go *before* the command:
+
+```bash
+probe --base-url https://api.example.internal log $RUN loss=0.1
+probe --spool-dir /shared/probe/spool log $RUN loss=0.1
+```
+
+`probe login` also accepts them directly.
+
+| Global flag | Effect |
+|---|---|
+| `--base-url` | Override the endpoint |
+| `--spool-dir` | The outbox journal directory (or `PROBE_OUTBOX_DIR`) |
+| `--async` / `--sync` | Queue writes, or block until the server answers |
+| `--version` | Print the version |
+
+## Addressing an entity
+
+<Warning>
+**A bare ref is the slug. An id is written `id:<uuid>`.**
+
+```bash
+probe project delete folding                    # the slug
+probe project delete id:6fa49e87-...            # the id
+```
+
+Nothing is ever tried two ways, so a ref cannot mean two things. A bare UUID is refused as an unknown slug rather than resolved as an id.
+</Warning>
+
+The rule exists because the clever version was worse. With a resolver that tried a UUID first, a project whose *slug* happened to be another project's *id* meant `probe project delete <that string>` deleted the wrong project — exit 0, a `deleted` line echoing the ref, nothing to restore. Refusing an ambiguous question is a good answer; not being able to ask one is better.
+
+## Async by default
+
+Some writes queue locally and return immediately. Some do not. The split is deliberate.
+
+| Command | Default |
+|---|---|
+| `probe log` | **Queued** — a training loop must not wait on the network |
+| `probe span add` | **Queued** |
+| `probe artifact add` (run anchor) | **Queued** |
+| `probe run end` | **Blocks** — it is the delivery barrier |
+| Everything else | Synchronous |
+
+`PROBE_ASYNC=0` turns queueing off for the three that have it. `--async` on `run end` skips the barrier. Both flags are also accepted *after* the subcommand, where they win.
+
+<Info>
+Queued writes are fsynced and atomic, and survive a crash. `probe flush` (an alias of `probe outbox drain`) delivers everything and waits. See [the outbox](/cli/outbox).
+</Info>
+
+## Scoping
+
+Most commands default to the active workspace and project of the current context:
+
+```bash
+probe context use work
+probe workspace use engineering
+probe project use folding
+
+probe run start --experiment dockq        # no --project needed
+```
+
+Override per call with `--workspace-id`, `--workspace`, or `--project`.
+
+## Reading output
+
+Every read command prints JSON, so `jq` works everywhere:
+
+```bash
+probe get $RUN | jq -r '.status'
+probe project get folding | jq -r '.summary_markdown // ""'
+probe run list --experiment dockq | jq -r '.items[].name'
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Failure — the reason is printed |
+| `2` | Unknown command or bad arguments — and the specific verdict of `probe run check` (incomplete) and `probe outbox status` (undelivered) |
+
+Those two commands use exit 2 as an *answer*, not an error, so they compose into scripts:
+
+```bash
+probe outbox status || echo "still undelivered"
+probe run check $RUN --verify || echo "not reproducible yet"
+```
+
+<CardGroup cols={2}>
+  <Card title="Every command" icon="list" href="/cli/commands">
+    All 40 command groups, with what each one is for.
+  </Card>
+  <Card title="Authentication" icon="key" href="/cli/auth">
+    Device flow, tokens, contexts, and the read-only MCP credential.
+  </Card>
+</CardGroup>

@@ -1,0 +1,83 @@
+---
+title: "Search and knowledge"
+description: "Filter operators, semantic queries, and what the index actually covers."
+icon: "magnifying-glass"
+---
+
+One search box, two behaviours. **Type** for live name and slug suggestions; press **Enter** to search by meaning.
+
+It is on both the Projects and Experiments pages, and it is available even when you have no experiments — project-direct runs are searchable too.
+
+## Filter grammar
+
+Operators are parsed deterministically. Whatever prose remains after parsing goes to semantic retrieval.
+
+| Query | Interpreted as |
+|---|---|
+| `failed GRPO runs last week` | Runs with status failed, created in the previous calendar week; `GRPO` goes to retrieval |
+| `experiments context length` | Experiment results for the concept *context length* |
+| `project:context-study tag:baseline runs` | Runs in that project with that tag. **No semantic call at all** — no prose remains |
+| `config.learning_rate<0.001 metric.loss<0.3` | Runs whose numeric config and latest unambiguous loss both satisfy the predicates |
+| `config.optimizer="adam w"` | Exact string config value, spaces included |
+| `after:2026-09-01 before:2026-09-08` | Created on or after the first local midnight and before the second |
+
+Supported operators: entity type, lifecycle status, relative dates (`today`, `yesterday`, `last week`, `last N days`), `project:`, `owner:`, `tag:`, `after:` and `before:`, `config.<key>` comparisons, and `metric.<key>` comparisons.
+
+### Chips
+
+Every interpretation is shown as a removable chip, so you can correct the parse without rewriting the query. Explicit UI choices — the entity-type control, the workspace — take precedence over anything inferred.
+
+<Note>
+Unrecognised or ambiguous wording stays semantic text, or produces an actionable validation message. **It never silently invents a metric key, threshold, aggregation or owner.**
+</Note>
+
+### Metric comparisons
+
+A metric predicate uses the **latest scalar for an exact metric key with unambiguous series dimensions**. An absent or ambiguous measurement does not match — it is not treated as zero and not treated as passing.
+
+Structured predicates apply **before** the candidate limit, so a pure filter query enumerates matching rows deterministically. For conceptual queries the response marks its window and any truncation honestly — a filter applied after a bounded engine window does not guarantee exhaustive recall, and the response does not pretend otherwise.
+
+## Results
+
+Results navigate directly to the project, experiment or run, showing type, the current breadcrumb, status and a matched excerpt. Matching runs expand under their experiment; repeated siblings collapse after three, without ever hiding a confirmed exact identifier.
+
+The **All / Projects / Experiments / Runs** controls are **server filters**, not filters over what is already on screen.
+
+A confirmed complete name, slug or UUID match is pinned to the top. Other evidence is deduplicated and combined by reciprocal-rank fusion over channel ranks — never by adding raw scores.
+
+<Warning>
+An empty result list **never claims exhaustive absence** when retrieval is degraded or capped. If the semantic channel is unavailable, the response says so rather than reporting zero hits as a finding.
+</Warning>
+
+## Workspace scope
+
+Search respects the selected workspace. **Choose All workspaces for cross-workspace discovery** — the most common "search is broken" report is a project filed on a different shelf.
+
+Changing workspace or query aborts obsolete requests, so an answer for inputs you have left is never displayed.
+
+## The knowledge index
+
+Beyond entities, one index covers documents: captured sessions, notes, papers, connected GitHub repositories, imported W&amp;B and Benchling content, and artifact text.
+
+Two channels answer every query — an **exact** channel that matches identifiers, names and paths, and a **semantic** channel that matches meaning — sectioned by source with per-result provenance.
+
+<Tip>
+**A literal identifier is the strongest query you can write.** An issue number, a run slug, a file path or a hash goes straight through the exact channel. Phrasing matters much less than people expect; identifiers matter much more.
+</Tip>
+
+Search previews position their window on the chunk that matched the query, not on the first N characters of the document — which on many documents is a metadata header rather than anything about your question.
+
+## For agents
+
+```
+search_knowledge   find things about X
+browse             what exists here
+```
+
+See [the MCP reference](/agents/mcp).
+
+## When the engine is off
+
+A self-hosted install can run without the knowledge engine. Search then returns `state: "partial"` with SQL-exact results only — matching projects, experiments and artifacts, but not run names, and with no semantic channel. That state is reported, not hidden.
+
+See [self-hosting](/deploy/self-host).

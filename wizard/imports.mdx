@@ -1,0 +1,65 @@
+---
+title: "Existing imports"
+description: "Monitor background imports, read their results, resume what was interrupted."
+icon: "list-check"
+---
+
+Imports run in the background and outlive the wizard. **Your research → Existing imports** is where you check on them.
+
+```bash
+npx probe-research            # → Existing imports
+probe wizard --action imports
+```
+
+Status updates live while the page is open.
+
+## Reading a row
+
+Each saved import shows a mark, a state, a progress bar and a count.
+
+| Mark | State | Means |
+|---|---|---|
+| `·` | **Queued** | Accepted, not started |
+| `»` | **Scanning** | Reading the source, before delivery |
+| `»` | **Importing** | Delivering |
+| `·` | **Waiting for connection** | The network went away; it will retry itself |
+| `✔` | **Complete** | Everything planned arrived |
+| `!` | **Partially complete** | Finished, but fewer items than planned — open it to see which |
+| `!` | **Interrupted** | Stopped mid-flight; resumable from its checkpoint |
+| `✗` | **Needs attention** | Failed; the reason is on the detail |
+| `·` | **Canceled** | You stopped it |
+
+<Note>
+**Partially complete is not a synonym for Complete.** A byte-limited import reports the count it actually verified, and the wizard shows it as partial rather than rounding up. A missing count reads as `Completion unavailable`, never as success.
+</Note>
+
+While a session import is re-checking what it already uploaded, the status line says so with its progress — `Checking upload status · 3,200/3,857 checked` — rather than leaving a bar that looks hung.
+
+## What you can do to one
+
+| Action | Effect |
+|---|---|
+| **Open** | The detail: what was planned, what arrived, what needs review |
+| **Resume** | Continue from the saved checkpoint |
+| **Cancel** | Stop it. Already-delivered work stays delivered |
+| **Back** | Return to the menu. Running imports keep running |
+
+Resuming keeps the original destination and the original file and session versions. It does not pick up new or changed files — those go through `--import-changed` so a retry can never quietly widen its own scope.
+
+## Two bars, not one
+
+Session imports and folder imports are tracked separately and always displayed separately, sessions first. They fail independently and complete independently, and a single merged bar would hide one behind the other.
+
+The same pair appears compactly on the wizard's main menu, directly under the device summary.
+
+## From a script
+
+Background jobs are the wizard's lane. From a shell, `probe backfill` is synchronous and shares the same coverage records and delivery receipts — so a file already delivered by a background job is not uploaded twice.
+
+```bash
+probe backfill /path/to/work --project existing-project
+```
+
+<Card title="How imports are planned" icon="box-archive" href="/wizard/import">
+  What the scanner reads, what needs review, and how resume works.
+</Card>

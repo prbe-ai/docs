@@ -1,0 +1,138 @@
+---
+title: "SDK quickstart"
+sidebarTitle: "Quickstart"
+description: "Three lines in a training script, and what they do that a global does not."
+icon: "play"
+---
+
+```bash
+pip install probe-research
+```
+
+## The ambient form
+
+For code that has no handle to pass around — a training loop, a callback, a library three frames down:
+
+```python
+import probe
+
+probe.init(
+    project="folding",
+    experiment="dockq-sweep",
+    question="does temperature 0.7 win?",
+)
+
+probe.log({"train/loss": 0.42, "eval/dockq": 0.71}, step=42)   # from anywhere, any thread
+
+probe.finish()
+```
+
+`probe.init()` takes everything `client.run()` does and returns the same `Run` handle, so `with probe.init(...) as run:` works and the rest of the API is one attribute away.
+
+<Note>
+**The binding is not a global.** It is a contextvar backed by a process default, which means two things a bare global gets wrong:
+
+- A worker thread **finds** the run. A plain contextvar would not — threads start with an empty context.
+- A second `init()` inside a thread or block **shadows** the outer one rather than hijacking it. That is the part of `wandb.init()`'s global that silently corrupts concurrent runs.
+
+`probe.active_run()` returns the current binding.
+</Note>
+
+A script that exits without `finish()` is closed at exit as `completed`, `failed` or `canceled` — `KeyboardInterrupt` is `canceled`, because stopping a run is a decision and not a defect.
+
+## The explicit form
+
+No ambient state at all:
+
+```python
+import probe
+
+client = probe.Client()          # resolves credentials from env or `probe login`
+
+# The FIRST run in a new experiment says what you expect to see:
+run = client.run(
+    experiment="dockq-sweep",
+    question="temp 0.7 wins",
+    name="run-1",
+    project="folding",
+    description="DockQ baseline at temperature 0.7",
+    source="runpod",
+    external_id="rp-9931",
+)
+
+# ...and every run after that is bare — the experiment already exists, and its
+# question is first-write-wins, so reopening never rewrites it:
+run = client.run(experiment="dockq-sweep", project="folding")
+
+# No question and no experiment? That is a project-direct run.
+run = client.run(project="folding")
+```
+
+`run()` **resolves** by default. `question=` is the one opt-in to creation.
+
+## The rest of a run
+
+```python
+with run.unit(coords={"rank": 0}, labels={"sample": 3}):
+    run.log({"reward": 0.71}, step=12)      # carries both maps
+
+with run.span("rollout", name="rollout-0", step_index=1) as span:
+    span.attributes["reward"] = 0.8         # closes with ended_at and a terminal status;
+    ...                                     # `failed` if the body raises. Spans nest.
+
+run.log_hw({"gpu/temp_c": 71}, dimensions={"rank": 0})
+run.log_artifact("final.sif", uri="r2://bucket/final.sif", kind="artifact")
+run.snapshot()                              # git state, dependencies, hardware
+run.link(wandb_run_id="abc", gpu_job="rp-9931")
+run.execute(["python", "train.py", "--config", "dockq.yaml"])
+run.finish()                                # flushes the spool, sets status and ended_at
+```
+
+## Writes never block your training loop
+
+Data writes are **fail-open by default**. On failure they spool to disk and return — they do not raise and they do not retry inline.
+
+```
+~/.local/state/probe/spool
+```
+
+`run.finish()` (or `probe flush`) replays the spool. Appends and queue rewrites are fsynced and atomic.
+
+<Warning>
+On rented compute, put the queue somewhere durable or a preempted node takes the unsent writes with it:
+
+```bash
+export PROBE_SPOOL_DIR=/shared/probe/spool
+```
+
+Pass `strict=True` to a write to make it raise instead of spooling — useful in tests, wrong in a training loop.
+</Warning>
+
+## Reading runs back
+
+```python
+comparison = client.compare(experiment_id=exp_id, keys=["dockq"])
+aligned = comparison.aligned("dockq")
+
+for label, values in aligned.values.items():
+    plot(aligned.steps, values, label=label)
+
+df = aligned.to_pandas()        # pandas is optional and only touched here
+```
+
+Name the runs with `run_ids=[...]`, or select them with the same filters `list_runs` takes.
+
+<Info>
+Runs of differing length keep `None` holes rather than being cut to the shortest — differing length is usually what is being compared. More than 50 runs **batches** rather than truncating, because silently dropping runs 51 and up reads as "these are all of them".
+
+There is no separate read client. `wandb.Api()` is a distinct object because W&B has two transports; one REST transport does not need the split.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Full API reference" icon="book" href="/sdk/reference">
+    Every method on `Client` and `Run`, with its endpoint.
+  </Card>
+  <Card title="Framework integrations" icon="plug" href="/sdk/integrations">
+    Miles, passive push, and wiring Probe into a trainer that already has a tracker.
+  </Card>
+</CardGroup>

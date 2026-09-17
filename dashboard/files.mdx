@@ -1,0 +1,91 @@
+---
+title: "Files and artifacts"
+description: "The workspace explorer, the Shared folder, per-entity artifact trees, and the file reader."
+icon: "folder"
+---
+
+Three places files live, with one reader behind all of them.
+
+| Surface | Holds |
+|---|---|
+| **Files** | Files filed in the current workspace, under no project |
+| **Shared** | The team-owned folder — one per team, every member sees everything in it |
+| An entity's **Files** tab | Artifacts anchored to that run, experiment or project |
+
+## Folders load on demand
+
+An entity's explorer starts collapsed. Only root-level files and direct child folders load initially; expanding a folder loads that level. Each level requests at most 50 files and 50 child folders, with Previous/Next controls and honest shown-of-total counts.
+
+Collapsing a folder releases its descendants and cancels their pending requests — so a run with thousands of captured files costs one small answer per folder rather than one enormous answer per run.
+
+Loading, retry and empty states belong to the affected level, not the whole page.
+
+```bash
+probe artifact tree $RUN --prefix figures/ --limit 50    # the same read
+```
+
+## Search
+
+Collapsed until invoked, then a full-width row that focuses on open and returns focus to its trigger on Escape.
+
+| Where | Searches |
+|---|---|
+| Workspace / Shared | The loaded collection |
+| An entity explorer | File and folder **paths on the server**, including unopened descendants |
+
+A matching folder stays collapsed; opening it reveals its matching level. There is an explicit no-results state.
+
+## Rows
+
+Desktop rows align **Name**, **Added** and **Size** in stable columns, with folder counts beside their names. Narrow layouts move metadata beneath the filename and collapse secondary actions into one **More actions** control.
+
+**The row is the link.** Clicking an artifact opens its detailed file view directly — there is no preview modal and no separate go-to icon. The source page and tab are kept in `return_to` so moving between files does not lose your place.
+
+## The file reader
+
+<AccordionGroup>
+  <Accordion title="Code and config" icon="code">
+    Python, JSON, YAML and the rest render in a language-aware editor: exact read-only source, no edit control.
+  </Accordion>
+  <Accordion title="Markdown" icon="file-lines">
+    `.md` and `.markdown` open in **Preview**, using the same sanitized GFM, math, table and heading treatment as authored dashboard Markdown. **Source** is one action away and keeps its wrapping control. MDX and every other text format stay source-only.
+
+    The preview renders at most the first 4 KiB and says when it is truncated. Relative and ambiguous links stay inert — an artifact has no safe base URL — same-document footnotes stay interactive, and external images require an explicit load action, with the consent control kept outside any link.
+  </Accordion>
+  <Accordion title="Images and everything else" icon="image">
+    Images and other non-text artifacts show a preview on the detail page. Metadata, raw download and the version chain are available on every artifact.
+  </Accordion>
+</AccordionGroup>
+
+## The Shared folder
+
+One per team, distinct from workspaces, and it never holds projects or experiments. Any member with write access may share any workspace file.
+
+Sharing **re-anchors** the artifact row rather than copying it: the file leaves its workspace and appears in Shared, keeping its id and its provenance.
+
+```bash
+probe shared share <artifact-id>
+probe shared unshare <artifact-id>      # back to the default workspace
+probe shared list
+```
+
+A name collision in Shared is an error naming the existing file; replacing supersedes it atomically. Deletes here are soft and recoverable.
+
+Shared is also the level artifact **reuse** resolves against — when an agent asks whether an official version of something already exists, it is asking Shared.
+
+## Versions
+
+Appending a version keeps the chain, and `pin-impact` answers which projects and experiments depend on it.
+
+```bash
+probe artifact versions <name>
+probe artifact pin-impact <name>
+```
+
+<Warning>
+Artifacts do not supersede by name. Two with the same name coexist, ordered newest-first — a fresh upload does not quietly replace what was there.
+</Warning>
+
+<Card title="Recording files" icon="upload" href="/tracking/artifacts">
+  Anchors, references, bulk manifests and naming.
+</Card>

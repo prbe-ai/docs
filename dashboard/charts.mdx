@@ -1,0 +1,80 @@
+---
+title: "Charts"
+description: "Curves, stat tiles, expression panels, zoom, and the captured rows behind a chart."
+icon: "chart-line"
+---
+
+## Series identity
+
+Every metric series has a stable drill-down identity: **`(kind, key, dimensions)`**. Chart links preserve all three, so coordinate variants can never accidentally share an underlying-data table.
+
+## Three kinds of card
+
+<CardGroup cols={3}>
+  <Card title="Logged series" icon="chart-line">
+    What the training loop wrote. Full chart, table and export.
+  </Card>
+  <Card title="Derived series" icon="calculator">
+    Computed after the fact, with stored rows. Carries a **derived** chip — producer and computed-at on hover.
+  </Card>
+  <Card title="Expression panels" icon="function">
+    A read-time formula over logged series. Carries an **ƒ** chip and shows the rendered formula as a subtitle.
+  </Card>
+</CardGroup>
+
+<Warning>
+The distinction is load-bearing. A post-hoc number must never look like training-loop capture, so the chips are not decoration — they are how you know which you are reading.
+</Warning>
+
+## Expression panels
+
+The stored object is a **formula, never data**. Panels are agent-authored: the expression comes from a researcher's agent session or their own script, through the SDK or CLI. The dashboard renders, renames and deletes a view but never composes one — there is no expression editor and no template picker, because a fixed form cannot express what an arbitrary formula needs.
+
+What the dashboard owes instead is legibility. Opening a panel gives you the formula, its inputs, the raw spec, and who or what generated it. The **name** is the only editable field.
+
+A panel charts its evaluated result and exposes **no** captured-data drill-down — there are no underlying rows to open. Evaluation trouble surfaces on the card (named missing inputs, a dropped non-finite count) rather than silently rendering a partial curve, and the detail page's value table is labeled *computed*.
+
+```bash
+probe views preview $RUN --spec '{"expr":"train/loss - eval/loss"}'
+probe views create $RUN --spec-file gap.json
+```
+
+## Chart settings
+
+Available on logged-series and expression cards alike, immediately before Delete. They are **presentation-only**: title, native X axis, ranges, labels, scale and smoothing — never the stored expression or its inputs.
+
+Settings anchor to the immutable view id, not its editable name, and inherit run-wide defaults. Deleting a view removes its settings row in the same transaction, and a stale save serialises behind that deletion.
+
+## Zoom
+
+Drag a box on a Cartesian chart to narrow both axes to it. Hold **Shift** to lock the zoom to whichever direction the drag travelled farther in, leaving the other axis at the window it already had — the selection band stretches across the full plot on the free axis and the cursor turns directional to say so.
+
+The resolved axis is fixed at the last painted frame, so the window that commits is always the band that was on screen. **Reset** restores both axes.
+
+The gesture hint rides the chart's accessible description as well as its hover tooltip, so reading it never depends on having a pointer that can hover.
+
+## Seeing the actual rows
+
+Every chart carries a data action — on run overview charts, stat tiles, step charts, sandbox-diff charts and AI-summary charts alike.
+
+<Note>
+The chart may use a bounded plotting read. **The table does not.** It uses lossless, cursor-paginated export rows rather than downsampled chart data, so what you inspect is what was captured.
+
+Transformations — grouping, smoothing, pivoting — are never presented as captured source rows.
+</Note>
+
+Eligible cards also expose **Raw samples** as a direct action rather than an overflow item.
+
+## Stat tiles
+
+A series with one point has nothing to plot, so it renders as a scalar tile. That is the intended shape for a headline number — and the unintended shape for a metric logged with a high-cardinality dimension, which produces a wall of them.
+
+See [metrics](/tracking/metrics) for how to avoid that at the write.
+
+## In the terminal
+
+```bash
+probe metrics plot $RUN --key train/loss
+```
+
+The same read, drawn instead of dumped. See [metrics](/tracking/metrics#curves-in-the-terminal).

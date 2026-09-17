@@ -1,0 +1,86 @@
+---
+title: "Team rules"
+description: "Workflow memory — the conventions somebody declared out loud, returned to an agent when they apply."
+icon: "gavel"
+---
+
+Every team has rules that live in one person's head. "Always check the queue depth before launching." "We never merge without re-running the parity suite." Workflow memory is where those get written down once, in a form a stranger's agent can act on.
+
+<Info>
+Workflow memory is behind a per-user feature flag. On accounts outside the rollout the `probe_procedures` MCP tool is not advertised and the `/set-rule` skill is not shipped — that is the gate working, not a broken install.
+</Info>
+
+## Writing one
+
+Two steps, always. The first structures what you meant; the second stores it.
+
+```bash
+probe rule preview "always check the queue depth before launching a sweep" \
+  --repo prbe-ai/research-os --cwd /srv/work/folding
+```
+
+`preview` writes **nothing**. It classifies the prose into a situation and shows you the draft that would be stored. Read it, edit it, then declare:
+
+```bash
+probe rule declare "<the confirmed rule text>" \
+  --situation-id <uuid> --relation new --session $SESSION_ID
+```
+
+| `--relation` | Use when |
+|---|---|
+| `new` | A rule the store does not have |
+| `merge` | The same rule as an existing clause, said better |
+| `variant` | The same situation, a different case |
+| `conflict` | It contradicts an existing clause — recorded as a conflict, not silently overwritten |
+
+`--related` names the clause the relation points at.
+
+<Warning>
+**Nothing is written until a person confirms it.** The point is to capture what someone *meant* in a form a stranger's agent can act on — not to transcribe their words. Show them the structured reading and ask.
+</Warning>
+
+## Publishing
+
+A declared rule is yours until it becomes the team's. A rule becomes visible team-wide when a second person declares the same thing — or immediately, on your own authority:
+
+```bash
+probe rule publish <clause-id>
+probe rule publish <clause-id> --withdraw
+```
+
+Publishing is unilateral and attributed to you. Withdrawing exists because of that: a rule the team turns out to disagree with should come down without deleting the clause and the evidence behind it.
+
+## Reading them
+
+```bash
+probe rule list                                  # what has this team captured
+probe rule list --query "about to deploy"        # classify, then serve what matches
+probe rule list --situation launching-a-run
+```
+
+With `--query`, the store classifies first and may legitimately return nothing: **an unclassifiable query serves zero rules rather than guessing a situation and handing you rules for the wrong one.**
+
+The situations the store is organised around are the moments where being wrong is expensive: launching a run, opening a PR, deploying, processing a dataset, running an eval, reviewing code, provisioning infrastructure, reproducing an experiment, debugging a failing run, recovering from an incident, claiming work is done.
+
+<Note>
+A rule that the classifier cannot place lands in a `misc` bucket and surfaces explicitly. It is never dropped.
+</Note>
+
+## Zero rules is four different answers
+
+The response distinguishes them in `completeness`, because "no engine wired", "this workspace never opted in", "nobody seeded the vocabulary" and "the team has not written one down" are otherwise identical bytes — and only the last one is an answer.
+
+## For agents
+
+| Surface | Reads | Writes |
+|---|---|---|
+| `/read-rules` skill | yes | no |
+| `/set-rule` skill | no | yes — after the person confirms |
+| `probe_procedures` MCP tool | yes | no — the server is read-only |
+| `probe rule declare` | | the only write path |
+
+The rule for agents is **check before the step, never after**: before an irreversible or shared-consequence action, and on arriving in an unfamiliar workspace.
+
+<Card title="Agent skills" icon="robot" href="/agents/skills">
+  How `/read-rules` and `/set-rule` fit into a session.
+</Card>

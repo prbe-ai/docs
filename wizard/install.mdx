@@ -1,0 +1,105 @@
+---
+title: "Install Probe"
+description: "The guided install, screen by screen: pick your agents, review what gets set up, install, import."
+icon: "download"
+---
+
+```bash
+npx probe-research install
+```
+
+Four screens. The first is skipped on a machine with only one coding agent, and the numbering adjusts so you are never told you are on step 2 of 4 when there are three.
+
+<Steps>
+  <Step title="Sign in" icon="key">
+    Before any screen, the wizard authorizes this device. It opens your browser; you approve there. Nothing is pasted.
+
+    If you were given a ten-character code on the website, pass it as an argument and the wizard uses it instead:
+
+    ```bash
+    npx probe-research install ABCD123456
+    ```
+
+    On a device that already holds a credential, the wizard asks whether to keep the current account or continue with the website code — that is how a wrong-account install gets corrected.
+  </Step>
+
+  <Step title="Coding agents" icon="robot">
+    Which agents to set up: **Claude Code**, **Codex**, **pi**, or several. Detected agents are pre-ticked; `Space` toggles, `Enter` continues.
+
+    This screen does not appear when the machine offers no choice.
+
+    <Info>
+    Each agent gets its own capture credential and its own plugin directory. They are configured independently and can fail independently — which is why the summary line shows MCP and capture per agent, not once for the device.
+    </Info>
+  </Step>
+
+  <Step title="Review and install" icon="clipboard-check">
+    Everything that is about to be set up, in plain terms. There is no capability picker here on purpose: the install is complete by design, and this screen is what carries the disclosure.
+
+    <AccordionGroup>
+      <Accordion title="CLI + MCP">
+        Skills for tracking runs, and read-only search over your lab's history.
+      </Accordion>
+      <Accordion title="Session capture">
+        Streams your Claude Code or Codex sessions to your team's knowledgebase. Sends **your prompts, the assistant's replies, and the shell commands you run** — not file contents and not tool output.
+
+        Credential-shaped values are replaced before upload, but that is a filter and not a guarantee, so keep live credentials out of your prompts. Captured sessions are visible to your whole team.
+
+        It is per-device, disclosed here and again at the browser approval, and [Settings](/wizard/settings) turns it off at any time.
+      </Accordion>
+      <Accordion title="Automatic updates">
+        Keeps the CLI and plugins current in the background at session start.
+      </Accordion>
+      <Accordion title="Rules in your global instructions">
+        A managed Probe block in each selected agent's global instruction file, prompting it to search Probe and track research there. The block is managed — `probe agent-rules refresh` rewrites it when it falls behind the CLI — and everything around it is left alone.
+      </Accordion>
+    </AccordionGroup>
+
+    `Enter` installs. `Esc` goes back.
+  </Step>
+
+  <Step title="Installing" icon="spinner">
+    The marketplace is added, both plugins are installed for each selected agent, the capture credential is paired, and the managed rules block is written. Progress is per-stage, not a single indeterminate bar.
+
+    Nothing here needs input. If an agent fails, the others still complete and the failure is named rather than rolled into a generic error.
+  </Step>
+
+  <Step title="Import existing work" icon="box-archive">
+    The install is done; this screen offers to bring your history in.
+
+    - **Import past coding sessions** — reads the selected agents' saved transcripts; asks before anything uploads.
+    - **Import a folder of project work** — an agent reads the folder, uploads what it finds and describes it.
+
+    Neither is ticked for you. Continuing with nothing selected is a real answer, not a failure state — you can come back to this from the main menu at any time.
+
+    See [Import research work](/wizard/import) for what each one does.
+  </Step>
+</Steps>
+
+## After the install
+
+The final page shows compact live progress for both kinds of import, sessions first. You can exit while they run.
+
+To confirm the install independently:
+
+```bash
+probe doctor
+```
+
+In Claude Code, add the status indicator under the input box:
+
+```bash
+probe statusline install
+```
+
+It renders `○ untracked`, `● folding`, or `● folding · running`, and keeps whatever status line you already had.
+
+## Doing it without the wizard
+
+```bash
+probe wizard --action manual
+```
+
+Prints every command the wizard would run, for the agents you name. It is generated from the same constants the wizard uses, so it cannot drift from what the wizard actually does. This is the path for air-gapped machines and for anyone who wants to see the commands before running them.
+
+See [Installation](/installation) for the commands themselves.

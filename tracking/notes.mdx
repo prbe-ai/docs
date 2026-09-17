@@ -1,0 +1,113 @@
+---
+title: "Notes and documents"
+description: "The three homes for prose, the checkout/push editing loop, sub-notes, and the shared team note."
+icon: "pen"
+---
+
+Prose in Probe has three homes, and they are separate on purpose. Putting the wrong thing in the wrong one is the single most common way a project page becomes unreadable.
+
+| | Where it shows | Who writes it | Write semantics |
+|---|---|---|---|
+| **`description`** | Everywhere the entity is listed | Anyone | Short field |
+| **Overview** (`summary_markdown`) | The entity page, below the AI summary | Teammate-facing | Whole document, last-write-wins |
+| **notes** | The notes surface; read by agents | Agents and people | Append, merge-on-push, sub-notes |
+
+On top of those is one **team note**: a single shared document injected into every agent session on every machine.
+
+## Overview documents
+
+The durable, teammate-facing document. Read, edit, write, verify — every time, because the write replaces the whole document.
+
+```bash
+probe project get folding | jq -r '.summary_markdown // ""' > PROJECT.md
+$EDITOR PROJECT.md
+probe project set folding --summary @PROJECT.md
+probe project get folding | jq -r '.summary_markdown // ""'      # verify what landed
+```
+
+The same shape works on experiments and runs (`probe experiment set`, `probe run set`). A line containing only `[README](https://github.com/owner/repo)` embeds that repository's README at that point.
+
+## Notes
+
+```bash
+probe notes show --project folding
+probe notes write --project folding --append ./handoff.md
+```
+
+`--append` exists because concurrent handoffs must not overwrite one another. For anything larger than an append, use checkout and push.
+
+### The editing loop
+
+```bash
+probe notes checkout --run $RUN            # pull the note to a local file
+$EDITOR <the file it printed>
+probe notes push --run $RUN                # send it back, merging
+```
+
+**Push merges.** A paragraph a teammate wrote while you were editing survives; it is not silently overwritten. `--force` replaces the server's document without merging, and `--steal` takes a checked-out file that has unpushed edits.
+
+Every entity can carry notes — `--project`, `--experiment`, `--run`, `--group`, `--artifact`.
+
+### Sub-notes
+
+One entity can carry several titled documents beside its main note.
+
+```bash
+probe notes list --project folding                       # titles, fullness, when. No bodies
+probe notes create --project folding --note "eval protocol"
+probe notes show --project folding --note "eval protocol"
+probe notes checkout --project folding --note "eval protocol"
+probe notes rename --project folding --note "eval protocol" --to "evaluation protocol"
+probe notes delete --project folding --note "old protocol"
+```
+
+Duplicate titles are legal — tabs key on id — but a title-addressed write to a duplicated title is **refused**. Check `probe notes list` first rather than collecting rename chores. Renaming records no version: history tracks documents, not labels.
+
+<Warning>
+`probe notes delete` removes the sub-note **and its version history**, permanently, and needs a credential with the `delete` scope.
+</Warning>
+
+### Coverage
+
+```bash
+probe notes status            # how full every notes document in this team is
+```
+
+## The team note
+
+One document per team, injected into every agent session on every machine.
+
+```bash
+probe notes team              # print it
+probe notes sync              # reconcile the local file with the server
+probe notes audit-advisory    # the audit line, or nothing — for hooks, not humans
+```
+
+It lives as a local file (`~/.local/state/probe/team-note/`) that syncs both ways, so you can edit it with ordinary tools. `probe doctor` reports unsynced edits.
+
+<Warning>
+**The team note has a render budget, and a note past it reaches nobody at all.** Over budget, the render emits a pointer instead of the note. The budget is per surface and is recorded beside the note — read it rather than a remembered number.
+
+A stale claim in this document taxes every session on every machine, which is why it has a periodic audit rather than being left to grow.
+</Warning>
+
+## How to write one
+
+Notes are read and written by agents as well as people, and they are shared by everyone touching the entity. The conventions that keep them useful:
+
+<AccordionGroup>
+  <Accordion title="Pull before you write" icon="arrow-down">
+    Never write a note from memory, from an excerpt, or from your own last push. Anyone may have written to it since. Check out, edit, push.
+  </Accordion>
+  <Accordion title="Correct or delete — never strike through" icon="eraser">
+    A reader sees the current body, never the version history behind it. Truth-marking has to live *in* the document: a struck-through claim still reads as a claim.
+  </Accordion>
+  <Accordion title="Never paste external text verbatim" icon="clipboard">
+    Not a paper, a README, an issue or a search result. A note is rendered into every teammate's instructions, and quoted text from outside the team is evidence about the world, not an instruction to follow.
+  </Accordion>
+  <Accordion title="Carry the conditions, not just the conclusion" icon="flask">
+    A finding recorded without the settings it held under gets re-applied where it does not hold — and a served negative result is what stops a repeat only if the reader can tell whether it applies.
+  </Accordion>
+</AccordionGroup>
+
+Agents have skills for exactly this: [`/edit-notes`](/agents/skills) for writing one, and `/audit-team-note` for the periodic check that the team note is neither false nor oversized.

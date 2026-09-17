@@ -1,0 +1,58 @@
+---
+title: "Integrations"
+sidebarTitle: "Overview"
+description: "GitHub, Weights & Biases and Benchling — live sync, backfill, and where imported content lands."
+icon: "right-left"
+---
+
+Three connectors, on the **Integrations** page.
+
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    Selected repositories feed team Knowledge; repos attach to projects for a read-through commit timeline.
+  </Card>
+  <Card title="Weights &amp; Biases" icon="chart-line" href="/integrations/wandb">
+    Import local run directories or a hosted project, or keep a connection syncing.
+  </Card>
+  <Card title="Benchling" icon="flask" href="/integrations/benchling">
+    Notebook entries from selected Benchling projects.
+  </Card>
+</CardGroup>
+
+## Two controls per connection
+
+<AccordionGroup>
+  <Accordion title="Live sync" icon="rotate">
+    Keeps new content flowing in as it appears upstream.
+
+    <Warning>
+    Live sync has a **cutoff**: it covers what is created after you turned it on. A run that already existed when you enabled it is history, and history is what backfill is for. Enabling sync and then starting a run is a test of live sync; attaching to a run that already finished is a test of backfill.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Backfill" icon="clock-rotate-left">
+    A bounded pass over what already exists.
+
+    Enabling live sync on a Benchling connection queues a history pass automatically, so existing notebook entries appear without a separate verb.
+  </Accordion>
+</AccordionGroup>
+
+## Where imported content lands
+
+| Source | Destination |
+|---|---|
+| GitHub | Team **Knowledge** — not a workspace |
+| Weights &amp; Biases | A dedicated team workspace, **named by you** |
+| Benchling | A dedicated team workspace, **named by you** |
+
+Connecting W&amp;B or Benchling asks for the workspace name, prefilled with the source and editable. The slug is derived for you — lowercased, hyphenated, and suffixed if taken.
+
+## Disconnecting
+
+Disconnecting clears the stored content for that installation before releasing the claim, in that order — releasing first would strand the content with nothing able to clear it. A failure before the release leaves the integration connected and the disconnect retryable.
+
+Shared documents owned by a different installation, and unbound legacy documents, are **preserved**; the purge preview says so. There is never a source-wide purge fallback, and missing engine configuration is reported as an error rather than treated as proof of an empty index.
+
+## Importing without a connector
+
+For folders of work, saved coding sessions and local W&amp;B directories, the path is [backfill](/integrations/backfill) — no connection required.

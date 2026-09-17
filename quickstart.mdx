@@ -1,47 +1,140 @@
 ---
 title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+description: "Install Probe, sign in, and record a run you can open in the dashboard."
+icon: "rocket"
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+Two paths, depending on what you want first. They are not exclusive — most people do both within a day.
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+<Tabs>
+  <Tab title="Record a training run">
+    <Steps>
+      <Step title="Install the client">
+        ```bash
+        pip install probe-research
+        ```
 
-## Prerequisites
+        This gives you both the Python SDK (`import probe`) and the `probe` command-line tool. They are the same implementation with two ergonomics.
+      </Step>
+      <Step title="Sign in">
+        ```bash
+        probe login
+        ```
 
-Before you begin, you must have:
+        This opens a browser device flow. You approve the device in the dashboard; nothing is pasted. The credential is written to `~/.config/probe/config.json`.
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+        <Tip>
+          You can skip this step entirely. The first `probe.init()` or `probe run start` with no token triggers the same browser approval inline, as long as you are on a TTY. In CI, set `PROBE_TOKEN` instead — headless callers get a clean `AuthError` rather than a hung prompt.
+        </Tip>
+      </Step>
+      <Step title="Instrument the script">
+        ```python
+        import probe
+        
+        probe.init(
+            project="folding",
+            experiment="dockq-sweep",
+            question="does temperature 0.7 win?",
+        )
+        
+        for step, batch in enumerate(loader):
+            loss = train_one(batch)
+            probe.log({"train/loss": loss}, step=step)
+        
+        probe.finish()
+        ```
 
-## Get started
+        `project` and `experiment` are created if they do not exist. `question` is the one opt-in to creating an experiment, so the first run in a new experiment says what you expect to see; every run after that is bare.
 
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+        If the script exits without `finish()`, the run is still closed at exit as `completed`, `failed` or `canceled` rather than left for the crash reaper.
+      </Step>
+      <Step title="Watch it">
+        Open [research.prbe.ai](https://research.prbe.ai) — the run appears under its experiment with live curves. Or stay in the terminal:
 
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+        ```bash
+        probe metrics plot $RUN_ID --key train/loss
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Set up a coding agent">
+    <Steps>
+      <Step title="Run the wizard">
+        ```bash
+        npx probe-research install
+        ```
 
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+        No prior install needed — `npx` fetches the launcher, which resolves the real CLI. The wizard signs you in through the browser, then walks four screens: pick your coding agents, review what will be set up, install, and offer to import work you already have.
 
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+        <Info>
+          Add `--agent codex` to set up Codex instead of (or as well as) Claude Code. `--agent both` does both.
+        </Info>
+      </Step>
+      <Step title="Confirm it took">
+        ```bash
+        probe doctor
+        ```
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+        Read-only. It prints what is installed, which credentials resolve, whether auto-update is working, and when the last update attempt was.
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+        In Claude Code, `probe statusline install` adds a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
+      </Step>
+      <Step title="Use it">
+        In your agent, the switch is `/probe`:
+
+        ```text
+        /probe on      reads and writes
+        /probe read    search yes, record no
+        /probe off     no calls at all
+        ```
+
+        With the switch on, the agent records work as it happens through the `/track-work` skill. It can also search your lab's history read-only at any time through the [MCP server](/agents/mcp).
+      </Step>
+      <Step title="Bring your history with you">
+        From the wizard's main menu, choose **Import research work** — or run it directly:
+
+        ```bash
+        probe backfill /path/to/project --project existing-project
+        probe backfill --transcripts-only
+        ```
+
+        Folder imports read the directory, upload what they find and describe it. Session imports pull saved coding-agent transcripts into the knowledgebase. Both run in the background and survive a terminal disconnect.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## What you just created
+
+```text
+workspace
+└── project          folding
+    └── experiment   dockq-sweep        ← carries the question
+        └── run      run-1              ← carries metrics, files, spans
+```
+
+A run does not need an experiment — a project-direct run is the honest home for work that has no hypothesis. And an experiment does not need to be created up front; naming one in `probe.init()` with a `question` creates it.
+
+<Card title="Core concepts" icon="diagram-project" href="/concepts">
+  The full model, including workspaces, run groups, artifacts and notes.
+</Card>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Log more than scalars" icon="chart-line" href="/tracking/metrics">
+    Coordinates, labels, non-numeric values, derived series and terminal plots.
+  </Card>
+
+  <Card title="Capture files and code" icon="folder" href="/tracking/artifacts">
+    Artifacts, anchors, versions and reuse.
+  </Card>
+
+  <Card title="The whole CLI" icon="terminal" href="/cli/commands">
+    Every command group, with what each one is for.
+  </Card>
+
+  <Card title="Import from W&B" icon="right-left" href="/integrations/wandb">
+    Local run directories or hosted projects.
+  </Card>
+</CardGroup>

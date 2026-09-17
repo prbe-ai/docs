@@ -1,0 +1,125 @@
+---
+title: "The wizard"
+sidebarTitle: "Overview"
+description: "One command that installs, imports, configures, diagnoses and removes Probe on this device."
+icon: "wand-magic-sparkles"
+---
+
+```bash
+npx probe-research
+```
+
+That is the whole surface. The wizard knows what is installed on this machine, which credentials resolve, whether the last update worked and what imports are running — so instead of describing what you should do, it does it.
+
+<Note>
+If you already have the CLI, `probe wizard` is the same thing. `npx` exists so the first run needs nothing installed.
+</Note>
+
+## Two doors
+
+| Command | Opens on | Use it when |
+|---|---|---|
+| `npx probe-research` / `probe wizard` | The main menu | You are managing an install, or you do not yet know what you want |
+| `npx probe-research install` / `probe install` | Straight into the guided install | You have already decided |
+
+`install` is a thin alias for `wizard --action configure` — the same flow, not a second implementation of it.
+
+## On this device
+
+Every screen of the menu sits under a live summary of the machine. It is the reason the menu is short: you choose against real state rather than guessing which action you need.
+
+```
+On this device:
+
+  Claude Code                  MCP on · capture on
+  Codex                        MCP on · capture off
+  CLI                          0.164.0 · up to date
+  plugin                       0.66.0 · up to date
+  tap                          0.41.0 · behind
+  Automatic updates            on
+  Account                      you@example.com
+  Last update attempt          2 hours ago · ok
+
+  Import progress
+  Sessions   ████████░░░░   3,200/3,857 checked
+```
+
+Three parts of that are worth calling out:
+
+- **Versions are graded per component.** CLI, SDK, plugin and tap update on their own cadences, and a machine is routinely current on one and months behind on another. The verdict shown here is the same one `probe doctor` prints.
+- **Last update attempt** is the only way to notice a detached auto-updater that has been failing silently.
+- **Import progress** is live. Background imports keep running while you use the menu, and you can leave the wizard without stopping them.
+
+## The main menu
+
+<AccordionGroup>
+  <Accordion title="Set up this device" icon="screwdriver-wrench">
+    **Install Probe** — set up research tracking, session capture and updates.
+
+    **Uninstall Probe** — stop capture and imports, clear history, remove plugins, sign out.
+
+    **Update to the latest version** — upgrades the CLI and the plugins.
+
+    Install and Uninstall are the same decision in two directions, which is why they sit next to each other. See [Install](/wizard/install).
+  </Accordion>
+
+  <Accordion title="Your research" icon="box-archive">
+    **Import research work** — import saved coding sessions, a project folder, or both.
+
+    **Existing imports** — monitor background imports, see results, or resume interrupted work.
+
+    See [Import research work](/wizard/import) and [Existing imports](/wizard/imports).
+  </Accordion>
+
+  <Accordion title="Settings" icon="sliders">
+    **Settings** — turn tracking, capture, rules or updates on or off; set defaults.
+
+    See [Settings](/wizard/settings).
+  </Accordion>
+
+  <Accordion title="Help" icon="circle-question">
+    **Diagnose a problem** — what is installed, which credentials resolve, whether updates work.
+
+    See [Diagnose and repair](/wizard/diagnose).
+  </Accordion>
+
+  <Accordion title="Account" icon="user">
+    **Sign out** — stop capture and imports, clear import history, and sign out.
+
+    Sign-in happens before the menu opens, so it is not a row here. Switching between accounts saved on this device is reachable with `--action account`. See [Accounts](/wizard/account).
+  </Accordion>
+
+  <Accordion title="Exit" icon="arrow-right-from-bracket">
+    **Exit** — leave the wizard. Imports continue in the background.
+  </Accordion>
+</AccordionGroup>
+
+## Getting around
+
+The wizard is a terminal UI, and the keys are the same on every screen.
+
+| Key | Does |
+|---|---|
+| `↑` `↓` | Move between rows |
+| `Space` | Toggle a checkbox row |
+| `Enter` | Choose, or continue |
+| `Esc` | Go back — from the top level, back to the main menu |
+| `Tab` | Read the full text of a long row |
+| `PgUp` / `PgDn` | Scroll a long screen |
+| `c` | Copy, where a screen offers a command to copy |
+
+Screens that step forward also carry a `‹ Back` / `Next ›` band at the bottom, so the navigation is visible and not only a keybinding. The folder picker adds `Ctrl+L` to type a path directly, `Ctrl+N` to continue with the current folder and `Ctrl+B` to go back.
+
+## The flags are the contract
+
+Every capability the menu offers is also a flag, and **the menu is a front end over the flags** — not the other way round. That has one consequence worth relying on:
+
+<Warning>
+An omitted flag preserves whatever is already configured. `probe wizard --yes` in CI can never silently revoke someone's capture pairing, because it only changes what you named.
+</Warning>
+
+```bash
+probe wizard --action configure --agent claude --tracking --no-capture --yes
+```
+
+See [Unattended use](/wizard/flags) for the full list.

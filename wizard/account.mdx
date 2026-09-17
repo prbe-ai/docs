@@ -1,0 +1,84 @@
+---
+title: "Accounts"
+description: "Sign in, switch between accounts saved on this device, and sign out."
+icon: "user"
+---
+
+The wizard signs in before the main menu opens, so most of the time there is nothing to do here. The account screen exists for the cases where there is: the wrong account, a second team, a laptop handed on.
+
+```bash
+probe wizard --action account
+```
+
+## Four rows
+
+| Row | What it does |
+|---|---|
+| **Sign in** | Approve this device in the browser; the credentials are saved here |
+| **Switch to an account saved here** | Use credentials this device already holds — no browser needed |
+| **Sign out** | Revoke this device's token and clear the credentials saved here |
+| **Back** | Return to the main menu. Nothing changes |
+
+On a device that already holds a credential the first row reads **Sign in as a different account** — same action, different sentence, because "Sign in" there looks like a no-op and that is how someone stuck on the wrong account concludes the wizard cannot help them.
+
+## Several accounts on one device
+
+Probe stores credentials in named **contexts**, the way `kubectl` stores clusters. One device can hold several; exactly one is active.
+
+```bash
+probe context list            # every saved account, credentials redacted
+probe context show work       # how one resolves, environment overrides included
+probe context use work        # switch (creates it empty if new)
+probe context delete work     # remove it and its stored credentials
+```
+
+Each context carries an endpoint, its credentials, and its anchors — the active workspace and project that scope commands like `probe run start`.
+
+<Note>
+"Signed in as X" is only half the answer. The other half is which of this device's saved accounts is currently answering, which is why the wizard's summary shows the active context alongside the email.
+</Note>
+
+## What sign-out actually does
+
+Signing out is not just forgetting a token:
+
+- the token this device holds is **revoked**, not merely deleted
+- the active context is cleared
+- session capture stops, so it cannot keep uploading to the account you just left
+- local import history is cleared
+
+**The plugins stay installed.** Removing those is [Uninstall](/wizard/diagnose#uninstalling).
+
+<Warning>
+Credentials in your shell outrank the config file. `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` and `PROBE_SERVICE_TOKEN` are all checked before it, so after a sign-out the CLI will still authenticate if one of those is exported. The wizard names any it finds — it cannot unset a variable in your parent shell, and staying quiet about it would be the same lie as an empty file with live capture behind it.
+</Warning>
+
+## Signing in without a browser
+
+For air-gapped machines and CI:
+
+```bash
+probe login --token probe_pat_xxxxxxxx           # verified against GET /v1/me
+probe login --endpoint-only --base-url https://api.example.internal
+```
+
+Both write `~/.config/probe/config.json`. Or skip the file entirely and set `PROBE_TOKEN` in the environment.
+
+To mint and manage tokens:
+
+```bash
+probe token create            # browser device flow; approve in the dashboard
+probe token list              # your live tokens — secrets are never shown
+probe token revoke <prefix>   # revoking a teammate's needs the dashboard
+```
+
+<Card title="Authentication in full" icon="key" href="/cli/auth">
+  Token kinds, scopes, environment variables and the read-only MCP credential.
+</Card>
+
+## For scripts
+
+```bash
+probe wizard --action login     # never prompts
+probe wizard --action logout    # never prompts
+```

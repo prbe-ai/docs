@@ -1,0 +1,106 @@
+---
+title: "Command reference"
+description: "Every probe command group and subcommand, with what it does."
+icon: "list"
+---
+
+Run `probe <group> --help` for the flags on any of these.
+
+## Setup and account
+
+| Command | Does |
+|---|---|
+| `probe install` | Straight into the guided install |
+| `probe wizard` | The [setup wizard](/wizard/overview): install, import, configure, diagnose |
+| `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works |
+| `probe login` | Browser device flow, or `--token` for the paste path |
+| `probe logout` | Stop imports, revoke the calling token, clear local config |
+| `probe whoami` | The current principal |
+| `probe token` | `list` · `create` · `revoke` |
+| `probe context` | `list` · `show` · `use` · `delete` — named local accounts |
+| `probe mcp` | `status` · `headers` · `env` · `token set` / `unset` |
+
+## Structure
+
+| Command | Does |
+|---|---|
+| `probe workspace` | `list` · `get` · `create` · `rename` · `delete` · `use` · `writers` |
+| `probe project` | `create` · `list` · `get` · `set` · `use` · `tag` · `move` · `delete` · `reference` · `code` · `contributors` |
+| `probe experiment` | `create` · `get` · `set` · `list` · `tag` · `freeze` · `reproduce` · `edges` · `delete` |
+| `probe group` | `create` · `list` · `get` · `set` — sweeps, ensembles, distributed runs |
+| `probe version` | `create` · `list` — immutable experiment version manifests |
+| `probe access-group` | `list` · `create` · `rename` · `delete` · `add` · `remove` |
+| `probe commits` | One page of a project's commit timeline, newest first |
+
+## Runs
+
+| Command | Does |
+|---|---|
+| `probe run` | `start` · `fork` · `child` · `set` · `list` · `tag` · `end` · `check` · `reproduce` · `get` · `series` · `metrics` · `delete` |
+| `probe exec` | Run a command under a run, holding it with a heartbeat |
+| `probe get` | Print a run |
+| `probe bundle` | Print a run bundle: run, series and artifacts |
+| `probe events` | Backend lifecycle events for a run |
+| `probe link` | Attach foreign keys under `metadata.foreign_keys` |
+
+## Telemetry
+
+| Command | Does |
+|---|---|
+| `probe log` | Append metric points. `--dim` adds series dimensions |
+| `probe metrics` | `grouped` · `wide` · `export` · `plot` · `backfill` · `delete` |
+| `probe series` | `latest` — cross-run scalar summary |
+| `probe coordinates` | The run's coordinate catalog |
+| `probe views` | `list` · `show` · `create` · `preview` · `data` · `rename` · `delete` |
+| `probe span` | `add` · `list` · `get` |
+| `probe trial` | `list` · `get` · `set` · `add` · `stage` · `reconcile` · `export` · `drain` · `watch` · `expand` |
+| `probe edge` | `add` · `remove` — lineage |
+
+## Files
+
+| Command | Does |
+|---|---|
+| `probe artifact` | `add` · `list` · `tree` · `move` · `download` · `versions` · `version-add` · `pin-impact` · `gc-uploads` · `delete` |
+| `probe shared` | `list` · `add` · `share` · `unshare` · `download` · `delete` |
+| `probe snapshot` | Non-disruptive code and environment capture |
+| `probe snapshot-show` | The captured code manifest, one file per line |
+| `probe snapshot-restore` | Rebuild the captured tree, or say exactly what is missing |
+
+## Prose
+
+| Command | Does |
+|---|---|
+| `probe notes` | `show` · `checkout` · `push` · `write` · `list` · `create` · `rename` · `delete` · `status` · `team` · `sync` · `audit-advisory` |
+| `probe paper` | `add` · `list` · `update` · `tag` · `edges` · `remove` |
+| `probe rule` | `preview` · `declare` · `publish` · `list` — workflow memory |
+| `probe agent-rules` | `refresh` — the managed Probe block in your agent's memory file |
+
+## Sessions
+
+| Command | Does |
+|---|---|
+| `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default` |
+| `probe statusline` | `install` · `uninstall` · `status` · `show` |
+
+## Imports
+
+| Command | Does |
+|---|---|
+| `probe backfill` | Import work you have already done: point an agent at a folder |
+| `probe wandb` | `discover` · `import-local` · `import-hosted` · `key` |
+| `probe import wandb` | Mirror one W&amp;B run's metric history into an existing run |
+
+## Delivery
+
+| Command | Does |
+|---|---|
+| `probe outbox` | `status` · `drain` · `watch` · `retry` · `discard` · `pause` · `resume` |
+| `probe flush` | Deliver everything queued and wait (alias of `outbox drain`) |
+
+<Card title="The outbox" icon="inbox" href="/cli/outbox">
+  What queues, what blocks, and what to do when delivery fails.
+</Card>
+
+## Reserved
+
+`probe hook session attach` / `checkpoint` / `detach` exists for deterministic coding-agent adapters and is not part of the researcher workflow. No hooks are installed by the current release.

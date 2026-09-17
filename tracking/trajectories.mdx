@@ -1,0 +1,107 @@
+---
+title: "Spans, trajectories and trials"
+description: "Record what happened inside a run — rollouts, turns, tool calls — and capture Harbor trial directories."
+icon: "timeline"
+---
+
+Metrics say how a run went. Spans say what it *did*.
+
+## Spans
+
+A span is a named, typed interval inside a run: a rollout, a turn, a tool call, an epoch, an evaluation pass. Spans nest, so a trajectory is a tree rather than a log.
+
+<CodeGroup>
+```python SDK
+with probe.span("rollout", name="rollout-0", step=1) as rollout:
+    with rollout.span("turn", name="turn-1"):
+        ...
+```
+
+```bash CLI
+probe span add $RUN --type rollout --name rollout-0 --step 1
+probe span list $RUN
+probe span get $RUN <span-id>
+```
+</CodeGroup>
+
+Spans are **upserted** on deterministic ids, so replaying a capture updates the same span rather than duplicating it.
+
+A metric point can carry `span_id` as an exemplar pointer — the span the value was produced under — which is how a reward on a chart links back to the rollout that earned it.
+
+<Note>
+A run bundle carries span *type counts* only, not the spans themselves. To read the tree, use `probe span list`, or the MCP `trajectory` view.
+</Note>
+
+## Units and ambient context
+
+Inside the SDK, a unit binds coordinates and labels for everything logged within it. Nested units merge, with the child winning per key.
+
+```python
+with probe.unit(dimensions={"rank": 0}):
+    probe.log({"loss": 0.42}, step=1)          # carries rank=0
+    with probe.unit(labels={"example_id": "x1"}):
+        probe.log({"reward": 1.0}, step=1)     # carries rank=0 and example_id=x1
+```
+
+## Harbor trials
+
+A trial is one rollout's on-disk output: the trajectory, the result, the files it produced. `probe trial` captures a Harbor trial directory into a run, keyed to the training step — the sandbox-to-step join.
+
+```bash
+probe trial add $RUN jobs/my-job/trials/swe-fix__x1 --step 600 --env-type skypilot-fork
+probe trial add $RUN <dir> --step 601 --no-expand        # raw capture, no expansion
+probe trial list $RUN
+probe trial get $RUN <trial>
+probe trial set $RUN <trial> --name "swe-fix x1" --description "passes after retry"
+```
+
+One capture produces a rollout span, a reward metric, labeled file uploads, and a `kind=harbor_trial` manifest — all keyed by `--step`. A recognised trajectory format (ATIF v1.x is built in) also expands into `turn` and `tool_call` spans under the rollout span.
+
+<Info>
+**Unknown formats are captured raw, never rejected**, and can be expanded later:
+
+```bash
+probe trial expand $RUN <manifest-artifact-id> --max-spans 0
+```
+
+Deterministic span ids make this idempotent — re-running upserts and never duplicates. Fork parsers plug in with `probe.connectors.atif.register_trajectory_parser("their-format", fn)`.
+</Info>
+
+### Staging and offline capture
+
+When the network is not available at the moment the trial finishes, stage it first and deliver later.
+
+```bash
+# Copy + checksum a host trial tree onto a durable volume. No network writes.
+probe trial stage <host-trial-dir> --to /shared/probe/trial-601 \
+  --expect result.json --expect lock.json
+
+# Deliver
+probe trial export /shared/probe/trial-601/export-request.json
+probe trial drain  /shared/probe/captures
+probe trial drain  /shared/probe/captures --run "$PROBE_RUN_ID"
+probe trial watch  /shared/probe/captures --interval 5
+probe trial reconcile $RUN
+```
+
+Staging keeps an atomic `.probe-capture.json` beside the durable bytes. Its **collection** status is tracked separately from **upload** status, so an exporter outage leaves a precise, retryable list of unconfirmed files rather than losing their paths.
+
+Stable external keys and span ids make retries update the same rollout. Correlation fields from Miles and Osmosis are preserved under the manifest's `source.context`, and `sample_id` / `group_id` are promoted to the Probe point labels `sample` and `group` — which is what keeps distinct same-step samples apart without minting a separate metric series for each.
+
+### Querying trials back
+
+```python
+client.list_run_artifacts(run_id, kind="harbor_trial", step_from=599, step_to=601)
+```
+
+### What the completeness claim covers
+
+The ledger's claim is deliberately bounded: it covers **declared regular files in the host Harbor trial directory**. Public Harbor tears the sandbox down before `Trial.run()` returns, so a post-run consumer cannot know about undeclared state Harbor never materialised. That state is reported as *unknown*; explicitly declared missing files are inventoried; hidden files and symlinks are recorded as visible skips.
+
+A true pre-teardown guarantee requires the producer or environment implementation to invoke durable collection from its own lifecycle hook.
+
+<Note>
+**Trajectories are Harbor-first by decision.** Today they enter Probe through Harbor's on-disk contract: an ATIF-supporting agent writes `trajectory.json` into its logs directory, the harness delivers it at `<trial_dir>/agent/trajectory.json`, and capture picks it up from there. Emission is per-agent opt-in upstream, so absence is a normal, captured state — not a failure.
+
+Live SDK span streaming from instrumented agent code is planned as the second door. The server-side turn and tool-call rails already exist, so it is an SDK-instrumentation arc rather than a schema change.
+</Note>

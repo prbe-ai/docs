@@ -1,0 +1,69 @@
+---
+title: "Backfill"
+description: "probe backfill — point an agent at a folder of work you have already done."
+icon: "clock-rotate-left"
+---
+
+```bash
+probe backfill /path/to/work --project existing-project
+probe backfill --transcripts-only
+```
+
+Backfill is the no-connector path: it reads a folder on this machine, works out what is in it, uploads what it finds and describes it. The [wizard](/wizard/import) runs the same thing with a screen and in the background; the CLI runs it synchronously.
+
+Both share the same file-coverage records and delivery receipts, so **completed uploads are reused whichever entry point you use.**
+
+## What it reads
+
+| Kind | Becomes |
+|---|---|
+| Files | Artifacts on the chosen anchor, deduplicated by content |
+| A GitHub checkout | Placement context from bounded commit history, plus the attached code source |
+| Coding-agent transcripts | Standalone sessions in the knowledgebase |
+| Local W&amp;B run directories | Runs and metric history — see [W&amp;B](/integrations/wandb) |
+
+<Note>
+**References remain references.** A file recorded as a pointer to bytes you keep elsewhere is never silently turned into an upload.
+
+**Sessions import as standalone.** Backfill verifies their native session identity and preserves immutable retries, but it does not infer or create links to projects, experiments or runs. Nothing is guessed.
+</Note>
+
+## Reviewing before it writes
+
+Folder imports either review placement before writing, or use the explicit automatic-approval option — which is never selected for you.
+
+File and Git reconstruction drafts are saved for **explicit publication review**, and refreshing the AI summary is a separate step again. The agent's reading of your folder is a draft until you say otherwise.
+
+## Resuming
+
+```bash
+probe backfill /path/to/work --source-id <id>       # the folder moved, same destination
+probe backfill /path/to/work --import-changed       # review files that changed since
+probe backfill /path/to/work --import-unverified    # review unresolved legacy matches
+```
+
+Rerun to resume. Coverage of current files is reported **separately** from pending delivery, so "we read everything" and "everything arrived" are never conflated.
+
+<Warning>
+A resume delivers the **saved plan and the saved file versions**. New or changed files are not silently added to that delivery — that is what `--import-changed` is for. A retry can never quietly widen its own scope.
+</Warning>
+
+## Transcripts only
+
+```bash
+probe backfill --transcripts-only
+```
+
+Imports saved coding-agent histories without touching any folder. The picker detects them independently of which agents you currently have installed.
+
+<Info>
+Protocol-2 transcript imports require a compatible engine, API and tap release. An older combination imports at the earlier protocol rather than failing.
+</Info>
+
+## Watching progress
+
+```bash
+npx probe-research          # → Existing imports
+```
+
+See [Existing imports](/wizard/imports) for the states and what each one means.

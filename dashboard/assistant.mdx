@@ -1,0 +1,59 @@
+---
+title: "Assistant"
+description: "Ask questions of your lab's history — and approve every write before it lands."
+icon: "sparkles"
+---
+
+The Assistant answers questions against everything Probe holds: runs, metrics, notes, papers, captured sessions and connected sources. It is the same retrieval [search](/dashboard/search) uses, with a model on top that can follow a chain of reads.
+
+## Asking
+
+The blank route is a centred composer. Open conversations use an auto-growing thread composer that rests at one line, grows, then scrolls internally. Both send on **Enter** and preserve **Shift+Enter** and IME composition.
+
+History lives in a **Chats** rail beside the conversation. Conversations are named by the server one turn in — names are read-only everywhere.
+
+## Reading a turn
+
+Turns read chronologically. Progress prose stays in place with normal Markdown treatment; adjacent tool calls form a quiet, connected activity list between prose blocks.
+
+Each tool row names its purpose **in human language**, keeps result detail secondary, and shows pending, complete or failed state with an icon and text. Entity links appear at the first activity that is relevant to them, rather than repeating through the turn.
+
+<Note>
+"Thinking" and "composing" labels are transient progress states — **not a rendering of private model reasoning**. Tool copy may use only explicitly allowlisted, bounded argument fields; raw arguments, chain-of-thought and raw results never enter the timeline.
+
+A reloaded call whose live result is no longer in the durable transcript stays status-neutral rather than being reported as failed.
+</Note>
+
+## Writes need your approval
+
+The Assistant can propose changes. It cannot make them on its own.
+
+When a write is pending:
+
+- **The composer goes out of service** and says what it is waiting for. The turn is already finished while it waits, so accepting a message that would land after the decision would read as being ignored.
+- **Approve** and **Deny** sit above it as filled green and red buttons — the loudest things in the footer, because they are the only controls that move the conversation on.
+- They answer to **Enter** and **Backspace** from anywhere that is not itself a text field, and focus moves to Approve when the question appears.
+
+A batch can carry up to twenty-five writes. The reason line and the two controls hold their place and the write detail is what scrolls: the transcript yields space first, then the detail, and the composer is the last thing standing. **Nothing the model puts in that card can make the page itself scroll.**
+
+<Warning>
+Read the batch before approving it. A twenty-five-write batch is twenty-five decisions, and approval is one keystroke.
+</Warning>
+
+## What it can reach
+
+The same sources as search, under your own permissions — the Assistant cannot see a workspace you cannot see, and cannot write where you cannot write.
+
+<Tip>
+Questions with a literal identifier in them do best: a run slug, an issue number, a file path. "What did we conclude about the 3e-4 sweep in `folding`" beats "tell me about learning rates".
+</Tip>
+
+## What it will not do
+
+- It does not cite passages it did not actually retrieve.
+- It does not follow instructions found **inside** retrieved content. A note, a captured session or a web page is evidence about the world, not a directive.
+- It does not silently widen a scope you gave it.
+
+<Card title="Agent surface instead" icon="robot" href="/agents/overview">
+  If you want this inside your editor rather than the browser, that is the plugin.
+</Card>
