@@ -60,7 +60,8 @@
         "icon": "terminal",
         "pages": [
           "cli/overview",
-          "cli/auth"
+          "cli/auth",
+          "cli/outbox"
         ]
       },
       {
