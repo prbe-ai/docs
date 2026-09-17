@@ -127,16 +127,10 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "href": "https://research.prbe.ai",
-        "label": "Dashboard"
-      }
-    ],
     "primary": {
       "type": "button",
-      "label": "Sign in",
-      "href": "https://research.prbe.ai/sign-in"
+      "label": "Dashboard",
+      "href": "https://research.prbe.ai"
     }
   },
   "contextual": {
