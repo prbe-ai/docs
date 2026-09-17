@@ -1,0 +1,81 @@
+---
+title: "Experiments and runs"
+description: "Run detail, lineage, comparison, trajectories, steps, trials and sessions."
+icon: "flask"
+---
+
+## The experiment page
+
+Overview leads with the question and the generated summary, then the authored Overview document.
+
+### Runs
+
+The **Runs** tab is the experiment's run-lineage directory, not just a list. Each family root renders once, followed by its direct children with a `└` marker. Deeper runs stay out of the compact directory and are summarised on their direct child as *(N more child runs under this)*.
+
+Families are ordered by newest activity, direct children newest-first. Fifty rows render initially with fifty more revealed at a time — but the **total count covers every run in scope**, including the summarised descendants.
+
+<Note>
+The experiment page has no separate lineage graph. The nested Runs directory *is* the relationship surface, so there is one place to look rather than two that can disagree.
+</Note>
+
+When lineage is malformed, the bad edge is detached without dropping the run from the list, and the warning states only what the snapshot proves: *parent no longer available*, *parent unavailable or outside this project*, *lineage cycle detected*, *run refers to itself as its parent*. These are explanations, not offers to fix anything.
+
+### Compare
+
+Appears once at least two runs exist. Two views behind one toggle:
+
+<Tabs>
+  <Tab title="Line-chart grid">
+    One chart per metric, with an always-visible row of run pills. Each pill keeps that run's stable colour and its selection state; **Show all** / **Show fewer** handles large run sets.
+  </Tab>
+  <Tab title="Parallel coordinates">
+    Scalar config and summary-metric values flattened into axes. Columns whose **present** values are all identical auto-hide — present-versus-missing alone is not variation, so a framework config dump carried by only some runs stays out of the default axes. Hidden constants remain available.
+
+    An axis brush keeps filtering the line charts until you clear it.
+  </Tab>
+</Tabs>
+
+Both views stay mounted across switches, so toggling never drops keyboard focus or discards fetched series.
+
+Compare receives **exact experiment membership only** — not the recursive descendants the Runs directory shows — because comparing a run against its own child is rarely the question.
+
+### Versions
+
+Frozen experiment versions pin a run set. That is what a citation points at.
+
+## The run page
+
+A run has no generated overview; the page opens on **Metrics**.
+
+| Tab | Holds |
+|---|---|
+| Metrics | Charts and stat tiles for every series |
+| Related | Direct children, when the run has descendants |
+| Files | The run's artifact explorer |
+| Trajectory | Spans: rollouts, turns, tool calls |
+| Trials | Captured Harbor trials |
+| Steps | Per-step records, including non-numeric values |
+| Sessions | Coding-agent sessions attributed to this run |
+| Notes | The operational note |
+
+**Related** counts every loaded child, including descendants summarised below a direct child. Ancestors and the run itself are not listed — the header and breadcrumb already establish that context. A deeper branch does not expand into another mini-tree; its direct child carries the *(N more child runs under this)* label, which keeps three siblings visibly different from a three-deep chain.
+
+### Steps and diffs
+
+`/runs/{id}/steps/{step}` opens one step: its metric points, its record of non-numeric values, and any sandbox diff captured at that point. `/runs/{id}/diff` compares captured working-tree state.
+
+### Trials
+
+`/runs/{id}/trials/{trial}` is a first-class entity page with the stored title (editable by members), the trajectory expanded into turn and tool-call spans where the format was recognised, the reward, and the captured files.
+
+## Sessions
+
+A session page carries the transcript and a **digest** — a condensed reading of what the session did. Sessions attributed to a run appear on that run's Sessions tab, which is what keeps "why was this launched" answerable.
+
+## Refresh behaviour
+
+Running entities poll; settled ones do not. A page does not silently swap out the data you are reading — an obsolete request triggered by a workspace or query change is aborted rather than allowed to answer for inputs you have already left.
+
+<Card title="Charts in detail" icon="chart-line" href="/dashboard/charts">
+  Zoom, settings, expression panels and the captured rows behind a curve.
+</Card>
