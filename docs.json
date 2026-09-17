@@ -37,7 +37,8 @@
         "icon": "flask",
         "pages": [
           "tracking/projects",
-          "tracking/runs"
+          "tracking/runs",
+          "tracking/metrics"
         ]
       },
       {

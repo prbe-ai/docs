@@ -1,0 +1,182 @@
+---
+title: "Metrics"
+description: "Curves, scalars and breakdowns — and how to pick the shape before you log the first point."
+icon: "chart-line"
+---
+
+<CodeGroup>
+```python SDK
+probe.log({"train/loss": 0.42, "eval/dockq": 0.71}, step=42)
+```
+
+```bash CLI
+probe log $RUN loss=0.42 dockq=0.71 --step 42
+```
+</CodeGroup>
+
+## Decide the shape first
+
+Series identity is `(run, kind, key, dimensions)`. Every distinct dimension combination is a **separate series** — and a series holding one point has nothing to plot, so it renders as a scalar tile rather than a graph.
+
+Every metric is one of three shapes:
+
+<CardGroup cols={3}>
+  <Card title="Curve" icon="chart-line">
+    Loss, learning rate, reward over time. One series, many points, distinguished by `step`.
+
+    **Only `step` makes a curve.** Spreading values across a dimension does not.
+  </Card>
+  <Card title="Headline scalar" icon="hashtag">
+    Final accuracy. One series, one point, zero to two low-cardinality dimensions.
+  </Card>
+  <Card title="Breakdown" icon="table-cells">
+    Accuracy by category. One series per category value.
+  </Card>
+</CardGroup>
+
+<Warning>
+**Budget series at the write.** The number of series is roughly the *product* of your dimension cardinalities. Past about 50 you have designed a wall of tiles.
+
+That failure is silent: every call succeeds, the values are correct, the data stays fully queryable, and the only symptom is an unreadable run page. Assert the count after the first run instead of eyeballing the dashboard.
+
+```python
+series = client.run_series(run.id)          # one row per series
+assert len(series) < 50, f"{len(series)} series — a wall of tiles"
+```
+</Warning>
+
+## Dimensions versus labels
+
+This is the distinction that decides whether a run page is readable.
+
+| | `dimensions` | `labels` |
+|---|---|---|
+| What it is | Low-cardinality grouping axes | Per-sample drill-down ids |
+| Identity it widens | The **series** | The **point** only |
+| Limit | 8 keys | 32 keys |
+| Good values | `split`, `seed`, `rank`, `difficulty`, `category` | `example_id`, `sample`, `group` |
+
+```python
+probe.log({"accuracy": 0.81}, step=100, dimensions={"split": "val", "rank": 3})
+probe.log({"reward": 1.0}, step=100, labels={"example_id": "swe-fix-931"})
+```
+
+<Warning>
+**A dimension is never an identifier.** 500 examples logged with `example_id` as a dimension is 500 series, 500 tiles and zero graphs. Per-sample identity goes in `labels`; per-item detail belongs in an [artifact](/tracking/artifacts), which is where analysis code reads it from anyway.
+
+Metrics are for what a human should see. Artifacts are for what code reads.
+</Warning>
+
+Both maps merge over any ambient `unit()` context, with the explicit call site winning per key. A key present in both maps raises `ValueError`.
+
+On the CLI, dimensions are `--dim`:
+
+```bash
+probe log $RUN accuracy=0.81 --step 100 --dim split=val --dim rank=3
+```
+
+## Steps
+
+| You pass | You get |
+|---|---|
+| `step=42` | That point at step 42 |
+| *nothing* | Auto-increments per metric kind — the bare loop still produces a curve |
+| `step=None` | Explicitly no step: a wall-clock axis. What the CLI and passive importers use |
+
+<Note>
+A **resumed** run continues its curve, so a step at or below the resume point is treated as a retry rather than appended — that would splice two executions into one series. The `hardware` kind is exempt in both directions, because its steps come off a different clock.
+</Note>
+
+### Timestamps
+
+`wall_clock` is optional and, when omitted, the point is stamped at **ingest time**. That is right for a live training loop and wrong for an importer replaying history — pass `wall_clock` explicitly when the value's real time is not now.
+
+## Value types
+
+Numbers — including bools, numpy scalars and 0-dimensional tensors — become metric points and plot. Strings, dicts, lists and `None` go into that step's **record** and read back through the trajectory view. You do not need to filter before logging.
+
+## Kinds
+
+`kind` separates rails that should not share a page. `model` is the default; `hardware` is what `log_hw` writes.
+
+```python
+probe.log_hw({"gpu/temp_c": 71, "gpu/util": 0.96}, dimensions={"rank": 0})
+```
+
+Use a separate kind to keep a high-cardinality cloud off the run page while leaving it queryable:
+
+```python
+probe.log({"accuracy": 0.81}, step=100)                          # the headline
+probe.log({"accuracy_per_example": 1.0}, kind="per_example",
+          labels={"example_id": eid})                            # the detail
+```
+
+<Warning>
+Never log a headline scalar and a per-item cloud under the **same key**. A computed view resolves a key and refuses one carrying several dimension variants. Use two keys.
+</Warning>
+
+## Declaring the reduction
+
+```python
+probe.log({"tokens": 4096}, step=10, agg="sum")
+```
+
+`agg` (`mean`, `sum`, `min`, `max`, `count`) declares how the key reduces, so a later grouped read can omit its own. The producer knows whether a count sums or a loss averages; declaring it at the write saves every reader from guessing. Conflicting declarations are rejected.
+
+## Derived series
+
+Values computed *after* the fact are marked as such, so post-hoc numbers never masquerade as training-loop capture.
+
+```bash
+probe log $RUN auc=0.93 --step 4000 --derived --producer score_auc.py \
+  --input eval/tpr --input eval/fpr --note "trapezoidal over the val sweep" \
+  --code-ref scripts/score_auc.py@a1b2c3d
+
+probe metrics backfill $RUN --key train/loss_smoothed --from-file smoothed.jsonl
+probe metrics delete $RUN --key train/loss_smoothed
+```
+
+Derived series carry a **derived** chip in the dashboard, with producer and computed-at on hover.
+
+## Expression views
+
+A view is a read-time formula over logged series. The stored object is the formula, never data — so a view costs nothing and can be created on a completed run.
+
+```bash
+probe views preview $RUN --spec '{"expr":"train/loss - eval/loss"}'   # evaluate, save nothing
+probe views create  $RUN --spec-file gap.json
+probe views list    $RUN
+probe views data    $RUN gap
+probe views rename  $RUN gap generalization-gap
+probe views delete  $RUN gap
+```
+
+Views are **agent-authored by design**: the dashboard renders, renames and deletes one but never composes one. A panel card marks itself with an **ƒ** chip and shows its rendered formula as a subtitle, and its detail page carries the formula, its inputs, the raw spec, and who generated it.
+
+## Reading metrics back
+
+```bash
+probe metrics wide   $RUN                 # step x metric table (the DataFrame pivot)
+probe metrics grouped $RUN --key reward --by rank --agg mean --step-bucket 100
+probe metrics export $RUN                 # lossless raw points, one JSON object per line
+probe series latest  --experiment dockq   # cross-run last/min/max per series
+probe coordinates    $RUN                 # every coordinate any fact landed on
+```
+
+`grouped` reduces server-side. `export` is lossless and cursor-paginated — use it when you need the actual rows, not a chart's downsampled view.
+
+## Curves in the terminal
+
+```bash
+probe metrics plot $RUN                                   # the board: every series, one spark each
+probe metrics plot $RUN --key train/loss                  # one braille panel with axes
+probe metrics plot $RUN --key train/loss --key eval/loss   # a panel each
+probe metrics plot $RUN --key rollout/len/{mean,median} --overlay
+probe metrics plot $RUN --key train/loss --ascii --no-color
+```
+
+Bare, it prints the board — every key with its last, min and max — which is the overview to read before choosing what to look at. Several `--key`s get a panel each, because two metrics on different scales do not share an axis. `--overlay` puts them on one canvas and says in the footer when the scales are far enough apart that the smaller curve has flattened.
+
+Anything the picture cannot show is printed to stderr first: a read the window cut short, a `--key` that matched nothing, a series dropped from an overlay, a non-finite point no scale can hold. On the canvas, `%` marks a cell more than one curve reached.
+
+Colour is off when stdout is not a TTY and whenever `NO_COLOR` is set; braille and box-drawing degrade to ASCII when the stream's encoding cannot carry them. Unlike its siblings, `plot` accepts a petname `short_id` as well as a UUID.
