@@ -70,7 +70,8 @@
         "pages": [
           "agents/overview",
           "agents/skills",
-          "agents/mcp"
+          "agents/mcp",
+          "agents/statusline"
         ]
       },
       {

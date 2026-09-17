@@ -1,0 +1,50 @@
+---
+title: "Status line"
+description: "A one-line indicator in Claude Code showing whether this session is tracked."
+icon: "bars"
+---
+
+```bash
+probe statusline install
+```
+
+Adds a Probe segment under Claude Code's input box, so you can see at a glance whether what you are doing is being recorded.
+
+| Shows | Means |
+|---|---|
+| `○ untracked` | This conversation is not recording |
+| `● folding` | Tracked, against the `folding` project |
+| `● folding · running` | Tracked, and a run is currently open |
+
+## It keeps what you already had
+
+Installing **wraps** an existing status line rather than replacing it. If you already have one configured, it keeps running and the Probe segment is chained after it.
+
+```bash
+probe statusline status      # whether it is installed, and what else shares the slot
+probe statusline show        # print the segment this session would render right now
+probe statusline uninstall   # remove the segment, restoring what was wrapped
+```
+
+`status` prints the settings file it wrote to, the command it installed, and what it chained after — which is the thing to read when two tools are competing for the slot.
+
+## Why it is worth installing
+
+The expensive failure is not "tracking was off". It is "tracking was off and nobody noticed for three weeks". A session that is recording nothing looks exactly like a session that is recording everything, right up until you go looking for the run.
+
+<Tip>
+If the indicator says `untracked` and you expected otherwise, `probe session status` gives the full decision — which default applied, what the machine default is, and whether the capture daemon is actually running.
+</Tip>
+
+## Changing what it reports
+
+```
+/probe on
+```
+
+```bash
+probe session track            # this conversation
+probe session default on       # what new sessions start at
+```
+
+See [the switch](/agents/overview#the-switch).
