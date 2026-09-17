@@ -58,7 +58,9 @@
       {
         "group": "CLI",
         "icon": "terminal",
-        "pages": []
+        "pages": [
+          "cli/overview"
+        ]
       },
       {
         "group": "Coding agents",
