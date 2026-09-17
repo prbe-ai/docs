@@ -1,0 +1,164 @@
+---
+title: "Projects and experiments"
+description: "Create, organise, tag, nest and freeze the structures runs live in."
+icon: "folder-tree"
+---
+
+## Projects
+
+```bash
+probe project create folding --kind training
+probe project list                    # in the active workspace
+probe project list --all              # across every workspace
+probe project get folding
+probe project use folding             # make it the default for run start and friends
+```
+
+A project declares a **kind** from a closed vocabulary — `training`, `inference`, `research`, `general`. The kind decides how the project's page is laid out, and nothing else; it never restructures an experiment or a run.
+
+| Kind | Use it for |
+|---|---|
+| `training` | Work where model weights move |
+| `inference` | Frozen-weight work: sweeps, ablations, evaluation runs |
+| `research` | Document-shaped investigation — lit reviews, design, theory. Leads with Papers |
+| `general` | Miscellaneous work. A real declared choice, not a fallback |
+
+<Note>
+A sweep over a frozen model is an **experiment inside an inference project**, not a project of its own. Reaching for a new project every time is how a workspace becomes unreadable.
+</Note>
+
+### Display fields
+
+```bash
+probe project set folding --name "Protein folding" --description "DockQ studies"
+
+# The Overview document: read, edit, write, verify.
+probe project get folding | jq -r '.summary_markdown // ""' > PROJECT.md
+$EDITOR PROJECT.md
+probe project set folding --summary @PROJECT.md
+probe project get folding | jq -r '.summary_markdown // ""'
+```
+
+`--summary` is **whole-document and last-write-wins**, so always read first and verify after. A line containing only `[README](https://github.com/owner/repo)` embeds that repository's README at that point.
+
+### Nesting and lateral links
+
+```bash
+probe project create folding-phase2 --parent folding     # a SUBPROJECT
+probe project move folding-phase2 --parent folding       # or move one later
+probe project move folding-phase2 --top-level
+probe project move folding-phase2 --workspace engineering
+```
+
+A phase of a bigger effort is a subproject of it — never a new top-level sibling.
+
+When the relation is not containment, use a **reference** instead:
+
+```bash
+probe project reference add lit-review --to folding
+```
+
+Use it when a review informed a training run, or two efforts share a method — the relation `--parent` would claim wrongly. Cycles and any depth are fine.
+
+### Attached code
+
+```bash
+probe project code list folding
+probe project code attach folding --repo owner/name
+probe commits folding                  # one page of the commit timeline, newest first
+```
+
+The timeline is read **through** GitHub by the backend. Nothing is mirrored, so attaching is cheap and detaching loses nothing.
+
+### Who worked on it
+
+```bash
+probe project contributors folding
+```
+
+## Experiments
+
+An experiment is one question and the runs that answer it.
+
+```bash
+probe experiment create dockq --question "does temperature 0.7 win?" --project folding
+probe experiment list --project folding --tag baseline
+probe experiment get dockq
+probe experiment set dockq --name "DockQ sweep" --description "Temperature sweep"
+probe experiment set dockq --summary @EXPERIMENT.md
+```
+
+<Warning>
+The question is **first-write-wins**. Reopening an experiment never rewrites it — an experiment whose question drifts to match its results has stopped being an experiment.
+</Warning>
+
+If you cannot write a question, you want a project-direct run instead. That is a legitimate shape, not a shortcut: work with no hypothesis has an honest home, and it is better than an experiment named after your working directory.
+
+### Freezing
+
+```bash
+probe experiment freeze dockq            # mint an immutable version pinning the current run set
+probe version list dockq
+probe version create dockq               # a launch-time manifest
+```
+
+This is what you cite when the numbers go into a paper or a decision — the run set is pinned and cannot drift underneath the claim.
+
+### Reproduction
+
+```bash
+probe experiment reproduce dockq          # per-run reproduction summaries
+probe run reproduce $RUN                  # the server-assembled record for one run
+```
+
+See [snapshots](/tracking/snapshots) for what those records contain.
+
+## Run groups
+
+A group collects peer runs: a sweep, an ensemble, the ranks of one distributed job.
+
+```bash
+GROUP=$(probe group create --name "lr sweep" --kind sweep --spec @search-space.json)
+probe run start --experiment dockq --group $GROUP --name lr-3e-4
+probe group list --experiment dockq
+probe group set $GROUP --notes "seed 3 diverged; excluded from the median"
+```
+
+## Tags
+
+Tags are free-form labels. The same grammar works on projects, experiments, runs and papers.
+
+```bash
+probe run tag $RUN baseline reproduced     # add
+probe run tag $RUN --remove reproduced     # drop
+probe run tag $RUN --set final             # replace the whole set
+probe run tag $RUN                         # bare: list
+```
+
+Filtering by several tags is **AND**:
+
+```bash
+probe run list --tag baseline --tag grpo
+```
+
+## Lineage
+
+```bash
+probe edge add --from run:abc --to artifact:ckpt-7 --type produced
+probe edge remove --from run:abc --to artifact:ckpt-7
+probe experiment edges dockq               # every edge under an experiment
+```
+
+Edges connect runs, artifacts, artifact versions and papers. They are what make "what produced this checkpoint" answerable later.
+
+## Deleting
+
+```bash
+probe project delete folding
+probe experiment delete dockq
+probe run delete $RUN
+```
+
+<Warning>
+Deletes are **permanent and irreversible**. There is no archive state and no recycle bin: a deleted project takes its experiments, runs, telemetry and artifacts with it. Deleting requires a credential with the `delete` scope.
+</Warning>
