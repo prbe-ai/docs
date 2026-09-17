@@ -111,7 +111,8 @@
         "icon": "book",
         "pages": [
           "reference/environment",
-          "reference/troubleshooting"
+          "reference/troubleshooting",
+          "reference/glossary"
         ]
       }
     ]

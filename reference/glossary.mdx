@@ -1,0 +1,83 @@
+---
+title: "Glossary"
+description: "Every term Probe uses, in one sentence each."
+icon: "book-bookmark"
+---
+
+## Structure
+
+| Term | Means |
+|---|---|
+| **Workspace** | A shelf for projects and files. Every team member reads every workspace; writes can be restricted |
+| **Project** | A body of work, with a declared kind (`training`, `inference`, `research`, `general`) |
+| **Subproject** | A phase of a bigger effort, nested under its parent |
+| **Reference** | A lateral link between projects, for when containment would claim something false |
+| **Experiment** | One question, and the runs that answer it. The question is first-write-wins |
+| **Run** | One execution: metrics, files, spans, a code snapshot, a lifecycle outcome |
+| **Project-direct run** | A run with no experiment — the honest home for work with no hypothesis |
+| **Run group** | Peer runs: a sweep, an ensemble, the ranks of a distributed job |
+| **Child / fork** | A sub-run under a parent / a new run continuing a source from a step |
+| **Version** | An immutable manifest pinning an experiment's run set at a moment |
+
+## Data
+
+| Term | Means |
+|---|---|
+| **Series** | One metric stream, identified by `(kind, key, dimensions)` |
+| **Kind** | The rail a metric lives on — `model` by default, `hardware` for `log_hw` |
+| **Dimension** | A low-cardinality grouping axis. **Widens the series** |
+| **Label** | Per-sample identity on a point. Does *not* widen the series |
+| **Coordinate** | The catalog of axes a run actually logged on |
+| **Derived series** | Values computed after the fact, with stored rows and a **derived** chip |
+| **View** | A read-time formula over logged series. Stores the formula, never data. Marked **ƒ** |
+| **Span** | A typed interval inside a run: rollout, turn, tool call. Spans nest |
+| **Trajectory** | A run's span tree |
+| **Trial** | One rollout's on-disk output, captured into a run and keyed to a step |
+
+## Files
+
+| Term | Means |
+|---|---|
+| **Artifact** | A file with an anchor — run, experiment, project, workspace or Shared |
+| **Anchor** | Which entity an artifact belongs to |
+| **Reference** | An artifact recorded as a pointer, with the bytes left where they are |
+| **Shared** | The team-owned folder. One per team; every member sees all of it. The level reuse resolves against |
+| **Snapshot** | Code, environment and hardware captured at run start |
+| **Execution record** | The server-assembled record a reproduction reads from |
+
+## Prose
+
+| Term | Means |
+|---|---|
+| **description** | The short identity line |
+| **Overview** (`summary_markdown`) | The durable, teammate-facing document. Whole-document, last-write-wins |
+| **Notes** | The operational briefing agents read and write. Append, merge-on-push, sub-notes |
+| **Sub-note** | A titled document beside an entity's main note |
+| **Team note** | One shared document injected into every agent session. Has a render budget |
+| **Rule** | A team convention in workflow memory, returned when its situation applies |
+| **Situation** | The moment a rule is about — launching a run, deploying, running an eval |
+
+## Clients
+
+| Term | Means |
+|---|---|
+| **`probe`** | The CLI and Python SDK, one package |
+| **`probe-research`** | The tracking plugin: skills plus the read-only MCP server |
+| **`probe-research-tap`** | The session-capture plugin |
+| **The wizard** | `npx probe-research` — install, import, configure, diagnose |
+| **The switch** | Per-conversation state: `on`, `read`, `off` |
+| **The outbox** | The durable local write queue |
+| **Context** | A named local account: endpoint, credentials, anchors |
+
+## Platform
+
+| Term | Means |
+|---|---|
+| **Session** | A coding-agent conversation, captured or imported |
+| **Digest** | A condensed reading of a session or a workspace's recent activity |
+| **Knowledge** | The one search index over documents, sessions, code and notes |
+| **Exact channel** | The search channel that matches identifiers, names and paths |
+| **Semantic channel** | The search channel that matches meaning |
+| **Engine-off** | A self-hosted install without the knowledge engine — exact results only |
+| **Backfill** | Importing work already done, from a folder or saved transcripts |
+| **Live sync** | A connector keeping new upstream content flowing in |
