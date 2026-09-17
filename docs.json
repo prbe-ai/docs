@@ -26,7 +26,8 @@
           "wizard/overview",
           "wizard/install",
           "wizard/import",
-          "wizard/imports"
+          "wizard/imports",
+          "wizard/account"
         ]
       },
       {
