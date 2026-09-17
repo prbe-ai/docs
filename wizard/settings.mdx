@@ -1,0 +1,94 @@
+---
+title: "Settings"
+description: "Turn tracking, session capture, agent rules and updates on or off, and set what a new session does by default."
+icon: "sliders"
+---
+
+```bash
+npx probe-research            # → Settings
+probe wizard --action settings
+```
+
+Five rows in two groups. `Space` toggles, `Enter` applies, `Esc` leaves without changing anything.
+
+The boxes read as the **union across this device's agents**: a row is ticked if this device does that thing at all. Applying a change leaves untouched rows exactly as they were.
+
+## What Probe does here
+
+<AccordionGroup>
+  <Accordion title="CLI + MCP" icon="terminal">
+    *Track runs in your coding agents; search lab history read-only.*
+
+    This is the tracking plugin: the skills that teach your agent the workflow, and the read-only MCP server it searches with. The box answers "is this installed here", which is what toggling it changes.
+
+    <Info>
+    A plugin that is installed but signed out is a different problem, and this row will not tell you about it. `probe doctor` owns that diagnosis.
+    </Info>
+  </Accordion>
+
+  <Accordion title="Session capture to the knowledgebase" icon="message">
+    *Sends this device's coding-agent sessions to your team's search.*
+
+    Off stops the upload immediately and unpairs this device's capture credential.
+
+    <Warning>
+    A capture credential can resolve from three places: the paired file, your environment, or the Probe config. Turning the row off clears the file — but if `PROBE_INGEST_TOKEN` is exported in your shell, capture can resume at the next session start. The wizard says so when it detects one, because it cannot unset a variable in your parent shell.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Rules in your global instructions" icon="file-pen">
+    *Prompts your coding agents to search and track research in Probe.*
+
+    A managed block in each selected agent's global instruction file. Everything outside the block is left alone. `probe agent-rules refresh` rewrites the block when it is older than the CLI.
+  </Accordion>
+
+  <Accordion title="Automatic updates" icon="arrows-rotate">
+    *Upgrades the CLI and plugins in the background at session start.*
+
+    Off means you update deliberately, with `npx probe-research` and **Update to the latest version**. `probe doctor` still grades your versions either way.
+  </Accordion>
+</AccordionGroup>
+
+## Defaults
+
+### Probe in new sessions
+
+This row cycles rather than toggles, because its three states are three different disclosures. It sets what [the switch](/agents/overview) starts at when a new coding-agent session opens.
+
+<Tabs>
+  <Tab title="on">
+    Sessions will be tracked through your coding agent.
+
+    Reads and writes. The agent records work as it happens.
+  </Tab>
+  <Tab title="read">
+    Write commands are blocked. Searching your team's prior work still works, and so does reporting what it finds.
+
+    The read surface stays live, so the agent keeps its memory of the lab — it just stops adding to it.
+  </Tab>
+  <Tab title="off">
+    No Probe calls at all — a new session will not search your team's prior work either, and cannot tell you what it missed.
+
+    This is the state to choose deliberately, not by accident. An agent with no reads does not know what it is not seeing.
+  </Tab>
+</Tabs>
+
+A single conversation can always override the default with `/probe on`, `/probe read` or `/probe off`, or from a shell:
+
+```bash
+probe session state read       # this conversation only
+probe session default on       # the device-wide default
+probe session status           # what this conversation is doing, and how that was decided
+```
+
+## From a script
+
+Every row is a flag, and omitting one preserves what is already configured:
+
+```bash
+probe wizard --no-capture --yes                    # capture off, everything else untouched
+probe wizard --tracking --agent-rules --yes        # ensure both on
+probe wizard --no-auto-update --yes                # stop background upgrades
+```
+
+See [Unattended use](/wizard/flags).

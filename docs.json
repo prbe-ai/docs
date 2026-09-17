@@ -27,6 +27,7 @@
           "wizard/install",
           "wizard/import",
           "wizard/imports",
+          "wizard/settings",
           "wizard/account",
           "wizard/diagnose",
           "wizard/flags"
