@@ -1,0 +1,82 @@
+---
+title: "Workspaces, team and settings"
+description: "Shelves for projects, who may edit what, members, devices and account settings."
+icon: "users"
+---
+
+## Workspaces
+
+A workspace is a place to file projects and files. **Not an ownership boundary** — every member of the team reads every workspace, and that is the product decision, not an omission.
+
+`/workspaces` is a flat alphabetical list: workspace name, project count. Selecting a row switches to that workspace and opens its Projects view; the gear beside it opens its settings without navigating.
+
+```bash
+probe workspace list
+probe workspace create engineering
+probe workspace rename engineering "Engineering"
+probe workspace use engineering
+probe workspace delete old-imports        # must be empty
+```
+
+Any member can rename any workspace. Any **empty** workspace can be deleted, with confirmation — move projects and files out first.
+
+<Note>
+Your workspace selection persists. A missing selection falls back to the oldest workspace by creation time, or **All** when none exist. The server creates a generic default only when a write needs one and none remain — deleting the last workspace does not itself create one.
+
+Subprojects inherit their parent's workspace. An explicit destination is validated, never silently replaced with the default.
+</Note>
+
+## Who may edit
+
+Reads are never restricted. Writes can be.
+
+| `write_mode` | Means |
+|---|---|
+| `open` | Any member may edit what is filed here. **The default, and what every existing workspace is** |
+| `restricted` | Only the named writers may edit |
+
+Writers are named by **access group** — a named set of people, so the list is maintained in one place rather than per workspace.
+
+```bash
+probe access-group create reviewers
+probe access-group add reviewers <user-id>
+probe access-group list
+
+probe workspace writers <slug>                      # who may edit
+probe workspace writers <slug> --set reviewers      # restrict
+probe workspace writers <slug> --open               # back to open
+```
+
+A workspace can be **born restricted** in one call rather than in two with a window between them.
+
+Enforcement is both app-layer and row-level in the database, so a bypass of one is not a bypass of the pair. The CLI is the current admin surface for this.
+
+## The team
+
+`/team` holds members, invitations and roles. Invited people receive an email and land in onboarding, where their first workspace is created.
+
+| Role | Can |
+|---|---|
+| Owner | Everything, including billing and access groups |
+| Admin | Manage members, access groups and workspace writers |
+| Member | Read everything; write where the workspace allows |
+
+Revoking a teammate's API token is a dashboard action — `probe token revoke` only covers your own.
+
+## Settings
+
+`/settings` carries account preferences and **devices** — every machine holding a credential for this account, with what it is paired for. That is where a lost laptop is de-authorised.
+
+Workspace management deliberately lives in its own place rather than under Settings, because the two get confused: Settings is about *you and your devices*, `/workspaces` is about *where work is filed*.
+
+## Onboarding
+
+A new team's first workspace is created in browser onboarding rather than at team creation, so the first named workspace is the oldest implicit destination for anything that does not say where it belongs. Joining an empty team still gets a generic fallback.
+
+## Privacy and terms
+
+`/privacy` is live and states what is collected, including product analytics. Deletion is described as deletion, not as a purge of every derived copy — the policy says what actually happens.
+
+<Card title="Core concepts" icon="diagram-project" href="/concepts">
+  Where workspaces sit relative to projects, experiments and runs.
+</Card>

@@ -83,7 +83,8 @@
           "dashboard/experiments-runs",
           "dashboard/charts",
           "dashboard/files",
-          "dashboard/assistant"
+          "dashboard/assistant",
+          "dashboard/workspaces"
         ]
       },
       {
