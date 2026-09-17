@@ -39,7 +39,8 @@
           "tracking/projects",
           "tracking/runs",
           "tracking/metrics",
-          "tracking/artifacts"
+          "tracking/artifacts",
+          "tracking/snapshots"
         ]
       },
       {

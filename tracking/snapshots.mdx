@@ -1,0 +1,105 @@
+---
+title: "Code capture and reproduction"
+description: "Record what was on disk when a run started, and rebuild it later with verification."
+icon: "camera"
+---
+
+A metric without the code that produced it is a number you cannot act on. `probe snapshot` records the working tree, the environment and the hardware, without disturbing any of them.
+
+```bash
+probe snapshot $RUN
+```
+
+From the SDK it is one call on the run handle:
+
+```python
+run.snapshot()
+```
+
+## What it captures
+
+| Source | How it is stored |
+|---|---|
+| Files git can supply | The commit and blob hashes, plus the recorded remote — no bytes uploaded |
+| Files git cannot supply | Uploaded as per-file capture rows, deduplicated by SHA-256 across runs |
+| Environment | The virtualenv's resolved packages |
+| Hardware | GPU model, count, driver |
+
+```bash
+probe snapshot $RUN \
+  --cwd /srv/work/folding \
+  --venv /srv/work/folding/.venv \
+  --include 'configs/**' --include 'data/small/*.json' \
+  --reference-over-mb 100 \
+  --max-upload-mb 256
+```
+
+| Flag | Effect |
+|---|---|
+| `--include GLOB` | Also capture paths git ignores — datasets, checkpoints, out-of-tree configs |
+| `--reference-over-mb N` | Above this, record where a file lives instead of copying it (default 100) |
+| `--max-upload-mb N` | **Refuse**, never truncate, above this size (default 256) |
+| `--no-env` / `--no-gpu` | Skip those rails |
+| `--no-upload` | Record the manifest only; store no bytes git cannot supply |
+
+## Storage layout
+
+By default each captured file becomes its own content-addressed artifact row, so the same file across a hundred runs is stored once and the explorer can browse the tree.
+
+```bash
+PROBE_CODE_STORAGE=archive probe snapshot $RUN
+```
+
+`archive` keeps the older one-tarball-per-run behaviour — a single deterministic `code-bytes` artifact. Restore reads either.
+
+## Reading the manifest
+
+```bash
+probe snapshot-show $RUN
+probe snapshot-show $RUN --pending-only
+```
+
+One file per line. `git` files are retrievable with `git cat-file blob <blob>` from the recorded remote; `blob` files are the ones git cannot supply.
+
+<Warning>
+The manifest's `n_pending_upload` is a **classification** count — "git cannot supply this, someone must upload it" — frozen into the execution record at capture time, *before* the upload it is counting. It is not work-remaining. `--pending-only` reconciles against what the upload actually did and reports what is genuinely unavailable.
+</Warning>
+
+## Rebuilding
+
+```bash
+probe snapshot-restore $RUN ./rebuilt
+probe snapshot-restore $RUN --verify-only
+```
+
+Files git can supply are fetched from the recorded remote; the rest come from the run's per-file capture rows, then from its `code-bytes` archive when one exists.
+
+**Every file is verified against the SHA-256 the manifest recorded.** A mismatch is reported unavailable and never written, so restore cannot hand back a tree that only looks right. It exits non-zero if any file could not be produced.
+
+<Warning>
+**A recorded git ref is only useful where that ref resolves.** A commit on a branch that was never pushed, or a remote the reader cannot reach, restores nothing — the uploaded bytes are what actually rebuilds the tree. If reproducibility outside your machine matters, push the commit, or capture with `--include` so the bytes travel.
+</Warning>
+
+## Is this run actually reproducible?
+
+```bash
+probe run check $RUN            # exit 2 if incomplete
+probe run check $RUN --verify
+```
+
+The default verdict is `unverified`: nothing is obviously absent, which is **not** the same as "this run can be rebuilt". `--verify` resolves the recorded commit against its remote and is the only way to earn `complete`.
+
+`advisories` lists gaps that are reported but not blocking — missing notes, no inputs decision, legacy runs with no launch context.
+
+## The assembled record
+
+```bash
+probe run reproduce $RUN
+probe experiment reproduce dockq
+```
+
+The server assembles the reproduction record: the execution record, the resolved environment reference, the code manifest and the run's inputs. Agents read the same thing through the MCP `reproduce` view.
+
+<Card title="Artifacts" icon="folder" href="/tracking/artifacts">
+  How captured files are anchored, versioned and browsed.
+</Card>
