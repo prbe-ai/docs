@@ -1,0 +1,111 @@
+---
+title: "Environment variables"
+description: "Every variable the SDK, CLI and MCP read, and what each one overrides."
+icon: "gear"
+---
+
+<Warning>
+**Environment credentials outrank the config file.** A `probe logout` clears the file, but an exported token still authenticates — no command can unset a variable in your parent shell.
+</Warning>
+
+## Connection
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_BASE_URL` | The API endpoint |
+| `PROBE_TOKEN` | User token — the `/v1` surface |
+| `PROBE_MCP_TOKEN` | Read-only token the MCP server prefers |
+| `PROBE_INGEST_TOKEN` | Ingest token — the `/ingest` surface, and session capture |
+| `PROBE_SERVICE_TOKEN` | Service token for machine callers |
+| `PROBE_HMAC_SECRET` | Optional body-signature secret for passive push |
+| `PROBE_AUTO_LOGIN` | `0` disables the inline browser approval on first use |
+| `PROBE_CONFIG` / `PROBE_CONFIG_PATH` | Override the config file location |
+| `PROBE_DASHBOARD_URL` | Where links in CLI output point |
+
+## Scope
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_PROJECT` | Default project for commands that take one |
+| `PROBE_WORKSPACE` | Default workspace |
+| `PROBE_RUN_ID` | The run a child process should join. Set by `probe exec` |
+| `PROBE_RUN_EPOCH` | Guards against joining a stale run. Set by `probe exec` |
+| `PROBE_PARENT_RUN` | Parent run for a child run |
+| `PROBE_PARENT_RELATION` | How the child relates to the parent |
+
+## Delivery
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_ASYNC` | `0` turns off queueing for `log`, `span add` and run-anchored `artifact add` |
+| `PROBE_ASYNC_UPLOADS` | Whether artifact bytes upload in the background |
+| `PROBE_SPOOL_DIR` / `PROBE_OUTBOX_DIR` | Where the durable write queue lives |
+| `PROBE_OUTBOX_MAX_PENDING` | Cap on queued operations |
+| `PROBE_OUTBOX_MIN_FREE_BYTES` | Refuse to queue below this free-space floor |
+| `PROBE_OUTBOX_PRODUCER_ID` | Distinguishes producers sharing one queue |
+| `PROBE_HEARTBEAT_SECONDS` | Run heartbeat interval. `<=0` disables |
+| `PROBE_FINISH_TIMEOUT_SEC` | How long `finish()` waits for the flush |
+
+<Warning>
+On rented or preemptible compute, set `PROBE_SPOOL_DIR` to durable storage. A node that disappears takes an ephemeral queue — and every unsent write in it — with it.
+</Warning>
+
+## Capture
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_CODE_STORAGE` | `artifacts` (default, per-file rows) or `archive` (one tarball per run) |
+| `PROBE_AUTO_SNAPSHOT` | `0` disables automatic code capture at run start |
+| `PROBE_HW` | `0` disables hardware metrics |
+| `PROBE_ENV_ALLOWLIST` | Environment variables allowed into the snapshot's environment record |
+| `PROBE_SANDBOX_SNAPSHOT_BIN` | Path to the sandbox snapshot helper |
+| `PROBE_EXPORT_INTERVAL_SEC` | `probe trial watch` polling interval |
+
+<Warning>
+`PROBE_ENV_ALLOWLIST` is an allowlist for a reason. Never widen it to something that would sweep credentials into a snapshot a whole team can read.
+</Warning>
+
+## Sessions and agents
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_AGENT` | Which coding agent this process is running under |
+| `PROBE_SESSION_TRACKING` | Override the tracking default for this process |
+| `PROBE_SESSION_STATE` | Override the switch state for this process |
+| `PROBE_ATTRIBUTION` | How work is attributed — for example `backfill` |
+| `PROBE_TAP_SOURCE` | Which agent's transcripts the tap reads |
+| `PROBE_DEVICE_ID_PATH` | Where the device identity is stored |
+| `PROBE_PLUGIN_ROOT` | Plugin installation root |
+| `PROBE_PI_PACKAGE_ROOT` / `PROBE_PI_SESSION_ROOTS` / `PROBE_PI_TAP_TOKEN` | pi-specific paths and credential |
+
+## MCP
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_MCP_TOKEN` | The read-only credential |
+| `PROBE_MCP_WEB_CAPACITY` | Share of the worker pool the web tools may hold. A quarter by default |
+| `PROBE_MCP_ANALYTICS` | MCP usage analytics |
+
+## Diagnostics
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_DIAGNOSTICS` | Extra diagnostic output |
+| `PROBE_TELEMETRY` / `PROBE_TELEMETRY_HOST` | Client telemetry, and where it goes |
+| `PROBE_VERSION_CACHE` / `PROBE_VERSION_TTL` / `PROBE_VERSION_TIMEOUT` | Version-manifest caching for update checks |
+
+## Also read
+
+| Variable | Effect |
+|---|---|
+| `NO_COLOR` | Turns colour off everywhere, including `probe metrics plot` |
+| `COLUMNS` | Terminal width for help output and plots |
+
+## A CI baseline
+
+```bash
+export PROBE_BASE_URL=https://api.research.prbe.ai
+export PROBE_TOKEN=<a read+write credential>
+export PROBE_AUTO_LOGIN=0
+export PROBE_SPOOL_DIR="$CI_WORKSPACE/.probe-spool"
+```

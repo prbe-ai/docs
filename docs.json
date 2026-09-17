@@ -109,7 +109,9 @@
       {
         "group": "Reference",
         "icon": "book",
-        "pages": []
+        "pages": [
+          "reference/environment"
+        ]
       }
     ]
   },
