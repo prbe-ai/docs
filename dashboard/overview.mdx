@@ -1,0 +1,73 @@
+---
+title: "The dashboard"
+sidebarTitle: "Overview"
+description: "Where the recorded work becomes browsable — a tour of every surface."
+icon: "browser"
+---
+
+[research.prbe.ai](https://research.prbe.ai)
+
+Everything the CLI, SDK and agent plugin record lands here. Nothing in the dashboard is a separate store — it reads the same API.
+
+## The surfaces
+
+<CardGroup cols={2}>
+  <Card title="Projects" icon="folder-tree" href="/dashboard/projects">
+    The directory of work, laid out by project kind, with digests of what changed recently.
+  </Card>
+  <Card title="Experiments and runs" icon="flask" href="/dashboard/experiments-runs">
+    Run detail, comparison, lineage, trajectories, steps and trials.
+  </Card>
+  <Card title="Charts" icon="chart-line" href="/dashboard/charts">
+    Curves, stat tiles, expression panels, zoom, and the captured rows behind them.
+  </Card>
+  <Card title="Files" icon="folder" href="/dashboard/files">
+    Workspace files, the Shared folder, and per-entity artifact explorers.
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/dashboard/search">
+    Filters and meaning over the whole record.
+  </Card>
+  <Card title="Assistant" icon="sparkles" href="/dashboard/assistant">
+    Ask questions of your lab's history, and approve any write before it lands.
+  </Card>
+  <Card title="Workspaces and team" icon="users" href="/dashboard/workspaces">
+    Shelves, write permissions, members, devices and settings.
+  </Card>
+  <Card title="Integrations" icon="right-left" href="/integrations/overview">
+    GitHub, Weights &amp; Biases and Benchling.
+  </Card>
+</CardGroup>
+
+## Things worth knowing up front
+
+<AccordionGroup>
+  <Accordion title="The workspace switcher scopes almost everything" icon="layer-group">
+    Projects, Files and search results are all filtered by the workspace you are in. **Choose All workspaces for cross-workspace discovery** — a project you cannot find is usually a project filed somewhere else.
+
+    Your selection persists. A missing selection falls back to the oldest workspace.
+  </Accordion>
+
+  <Accordion title="AI summaries are generated, and dated" icon="wand-magic-sparkles">
+    Entity pages lead with a generated summary, below which sits the **authored Overview** — the document a person or agent wrote. The two are visually distinct so a generated paragraph is never mistaken for a teammate's claim.
+
+    Summaries refresh on a queue rather than on every read; a stale one is marked, not silently served as current.
+  </Accordion>
+
+  <Accordion title="Computed is never shown as captured" icon="calculator">
+    Expression panels carry an **ƒ** chip; derived series carry a **derived** chip with producer and computed-at on hover. Grouping, smoothing and pivoting are never presented as source rows, and a panel's value table is labeled computed.
+
+    This is a hard rule throughout the dashboard: post-hoc numbers do not masquerade as training-loop capture.
+  </Accordion>
+
+  <Accordion title="Reads are open, writes may not be" icon="lock">
+    Every member of the team reads every workspace. What a workspace can restrict is who may **edit** what is filed in it. See [workspaces](/dashboard/workspaces).
+  </Accordion>
+
+  <Accordion title="An empty state is not an error state" icon="circle-exclamation">
+    A failed load renders as a failure, never as "nothing here". "No papers recorded" on a project that has papers would be a confident lie about your own data, so the two states are kept distinct everywhere they appear.
+  </Accordion>
+</AccordionGroup>
+
+## Getting set up
+
+The **Install** page carries the one command you need and nothing else — everything that used to live in collapsed "if something is not working" sections now lives in [the wizard](/wizard/overview), which can act on the state instead of describing it.
