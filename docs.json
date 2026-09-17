@@ -51,7 +51,8 @@
         "group": "Python SDK",
         "icon": "python",
         "pages": [
-          "sdk/quickstart"
+          "sdk/quickstart",
+          "sdk/integrations"
         ]
       },
       {

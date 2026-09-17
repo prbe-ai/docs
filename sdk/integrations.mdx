@@ -1,0 +1,120 @@
+---
+title: "Framework integrations"
+description: "Miles, passive push, and wiring Probe into a trainer that already has a tracker."
+icon: "plug"
+---
+
+## Miles
+
+A drop-in, W&amp;B-parity tracking backend for [Miles](https://github.com/MoonshotAI/miles)' `TrackingManager`. **Zero Miles commits required** — the registry is a plain dict checked against args flags at init, so activation is two lines in your launcher, before `init_tracking(args)`:
+
+```python
+from probe.connectors.miles import register
+
+register(args)          # registers the backend and sets args.use_probe
+```
+
+Every `TrackingManager.log()` lands with its own step counter — `train/step` and `rollout/step` map to `step_index` per key, and the counter entry itself is stripped. Values arrive **after** Miles' DP-rank reduction, which is exactly what W&amp;B sees.
+
+The run declares its labeled-point plan up front (`num_rollout × rollout_batch_size × n_samples_per_prompt`), so later per-sample capture never trips the server's default budget mid-training.
+
+Configuration comes from `PROBE_BASE_URL` / `PROBE_TOKEN`, with optional `args.probe_experiment` and `args.probe_run_name` falling back to the W&amp;B names.
+
+<Info>
+**Fail-open end to end.** A broken tracker never costs a training step, and non-finite values are dropped per point rather than failing the batch.
+</Info>
+
+### Per-sample detail
+
+Enable per-rank and per-sample capture without replacing aggregate logging:
+
+```text
+--custom-rollout-log-function-path probe.connectors.miles.per_sample_rollout_log
+```
+
+The hook logs labeled sample points through the same durable queue as Miles' aggregate calls. Every point carries `metric_scope=sample`, the Miles sample id, an optional group id, and — when the sample carries Harbor's returned capture `external_key` — the exact deterministic rollout span. So the dashboard can separate aggregate from sample points while still resolving sample → trial → trajectory, with no Miles-core change.
+
+Reward and effective response length are captured by default.
+
+### Publishing your own sample measurements
+
+<Tabs>
+  <Tab title="Inline on the sample">
+    ```python
+    sample.metadata["probe_metrics"] = {
+        "agent/input_tokens": input_tokens,
+        "agent/output_tokens": output_tokens,
+        "quality/custom_score": score,
+    }
+    ```
+  </Tab>
+
+  <Tab title="Declared path mapping">
+    If the values already live elsewhere on the sample, declare metric-name to dotted-path mappings on the same args object Miles sends to `RolloutManager`:
+
+    ```python
+    args.probe_sample_metrics = {
+        "agent/observed_tokens": "metadata.agent_metrics.observed_tokens",
+        "agent/turns": "metadata.agent_metrics.turns",
+        "agent/tool_calls": "metadata.agent_metrics.tool_calls",
+    }
+    ```
+  </Tab>
+
+  <Tab title="A hook module">
+    For stock launchers that do not expose arbitrary rollout args:
+
+    ```python
+    # my_project/probe_metrics.py
+    from probe.connectors.miles import make_per_sample_rollout_log
+
+    per_sample_rollout_log = make_per_sample_rollout_log({
+        "agent/observed_tokens": "metadata.agent_metrics.observed_tokens",
+        "agent/turns": "metadata.agent_metrics.turns",
+        "agent/tool_calls": "metadata.agent_metrics.tool_calls",
+    })
+    ```
+
+    Then point `--custom-rollout-log-function-path` at `my_project.probe_metrics.per_sample_rollout_log`. This stays entirely outside Miles source while keeping the shipped hook's durable queue, sample labels and Harbor span linkage.
+  </Tab>
+</Tabs>
+
+Missing, non-numeric, boolean and non-finite values are omitted; an explicit numeric zero is retained. Configured paths override a same-named `probe_metrics` entry. The run reserves 1,024 sample metric points per sample by default — raise `args.probe_sample_metric_budget` if a sample schema intentionally exceeds that.
+
+## Passive push
+
+For a platform integration that pushes once and does not hold a run handle:
+
+```python
+client.ingest(
+    project_slug="protein-folding",
+    experiment_slug="dockq",
+    run={"name": "r1", "source": "temporal", "external_id": "wf-1", "status": "running"},
+    metrics=[{"kind": "model", "key": "loss", "value": 0.5, "step_index": 1}],
+    batch_id="deadbeef",          # idempotent redelivery
+)
+```
+
+One idempotent push over a bearer **ingest token**, keyed on `(customer_id, source, external_id)`. Optionally body-signed with `PROBE_HMAC_SECRET`.
+
+This is the install-once shape: a workflow engine, a scheduler, or an internal platform that emits run state and wants it in Probe without adopting the run lifecycle.
+
+## Trainers that already have a tracker
+
+If a trainer (TRL, VERL, Ray, an internal harness) already calls into W&amp;B or MLflow, you have three options, in order of preference:
+
+<Steps>
+  <Step title="Register a backend where the framework supports one">
+    The Miles connector above is the worked example. A framework with a pluggable tracker registry takes the same two-line shape.
+  </Step>
+  <Step title="Call probe.init() alongside">
+    `probe.init()` binds ambiently, so a trainer's own callback can `probe.log()` without threading a handle through call frames. Wrapping the launcher with `probe exec` opens the run and hands the child `PROBE_RUN_ID`, which `probe.init()` joins — one run, not two.
+  </Step>
+  <Step title="Import afterwards">
+    If the work is already done and lives in W&amp;B, import it. See [Weights &amp; Biases](/integrations/wandb).
+  </Step>
+</Steps>
+
+<Card title="Instrumenting a script" icon="robot" href="/agents/skills">
+  The `/instrument-code` skill wires this in for you, and knows the trainer-specific shapes.
+</Card>
