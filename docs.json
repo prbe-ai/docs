@@ -40,7 +40,8 @@
           "tracking/runs",
           "tracking/metrics",
           "tracking/artifacts",
-          "tracking/snapshots"
+          "tracking/snapshots",
+          "tracking/trajectories"
         ]
       },
       {
