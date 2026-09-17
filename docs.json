@@ -78,7 +78,8 @@
         "group": "Dashboard",
         "icon": "browser",
         "pages": [
-          "dashboard/overview"
+          "dashboard/overview",
+          "dashboard/projects"
         ]
       },
       {

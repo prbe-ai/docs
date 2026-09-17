@@ -1,0 +1,79 @@
+---
+title: "Projects"
+description: "The directory of work: kinds, tabs, subprojects, digests and published pages."
+icon: "folder-tree"
+---
+
+The Projects page is the directory of everything filed in the current workspace. Cards carry the project's name, its owner badge, its kind, and a **Details** column that renders the page's first figure — a chart or diagram — with its caption underneath. Pages without a figure show the authored description instead.
+
+Use the workspace switcher to browse elsewhere, or **All workspaces** to see everything.
+
+## Kind decides the layout
+
+A project's kind is fundamental identity, declared at creation and not a reader preference — there is no relabel control.
+
+| Kind | Leads with | Empty Experiments tab |
+|---|---|---|
+| `training` | Experiments | Kept |
+| `inference` | Experiments | Kept |
+| `research` | **Papers** | Dropped |
+| `general` | — | Dropped |
+
+<Note>
+**Content always wins over the preset.** A tab with real rows renders whatever the kind says, and an unknown kind renders as `general` rather than breaking.
+
+Kind reaches the project page only. It never restructures an experiment or a run — anything type-specific inside an experiment is driven by that experiment's own data.
+</Note>
+
+## The project page
+
+<Steps>
+  <Step title="Overview">
+    The generated AI summary, then the authored **Overview** document below it. The pill row under the description carries the workspace badge, the kind, and the project's research tags.
+  </Step>
+  <Step title="Content tabs">
+    Experiments, Papers, Files, Knowledge, Runs, Sessions — which ones lead is the kind's doing. Each carries a count badge.
+  </Step>
+  <Step title="Knowledge sidebar">
+    Documents relevant to this project, **dated by when their knowledge was created** rather than when Probe discovered them.
+  </Step>
+</Steps>
+
+## Papers
+
+On a `research` project, Papers leads. Rows are compact previews — title, source id, repo, and a one-to-two-line summary, plus publication year, venue and up to four category chips where extraction succeeded. The whole row navigates to the paper's own page at `/papers/{id}`.
+
+A pending extraction shows a small spinner while a bounded, backed-off refresh runs for about a minute, then goes quiet rather than pretending to still be working. `Fetching paper title…` becomes `Untitled paper` after a terminal result.
+
+The tab is **read-only**: recording a paper is an act by whoever did the reading. An empty tab names the capture path rather than offering a form.
+
+See [Papers](/tracking/papers).
+
+## Subprojects
+
+A phase of a bigger effort appears nested under its parent. Attaching a subproject is an agent or CLI act, like recording a paper — the page shows the tree, it does not compose it.
+
+Projects can also **reference** each other laterally, for when a review informed a training run or two efforts share a method.
+
+## Workspace digests
+
+Digests report what changed across recent projects, with prose describing the activity rather than a diff of row counts. They generate on a schedule and are available to every team.
+
+## Published pages
+
+A project page can be published, which serves a read-only twin at a public URL: the Overview, its figures, and an attached repository README where one is configured. Published pages render panels and chips without any create, edit or delete control.
+
+<Warning>
+Publishing is a deliberate act with a real blast radius — a published project page is reachable by anyone with the link. A private repository's README embedded in an Overview is served on that page too.
+</Warning>
+
+## Attached code
+
+The **Code** tab lists the GitHub repositories attached to a project and reads their commit timeline **through** GitHub — nothing is mirrored, so attaching is cheap and detaching loses nothing.
+
+```bash
+probe project code list folding
+probe commits folding
+```
+
+The Code tab is behind a per-user gate on some accounts. **Connecting GitHub is not** — that is a knowledge source and is generally available, as is the published README read. See [GitHub](/integrations/github).
