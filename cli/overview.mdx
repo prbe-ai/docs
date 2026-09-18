@@ -11,6 +11,12 @@ probe --help
 
 The CLI is a thin shell over [the SDK](/sdk/quickstart) — same implementation, different ergonomics, so the two have capability parity.
 
+<Note>
+  **Setting the device up is the wizard's job, not the CLI's.** Installing, updating, uninstalling, signing in, switching accounts, turning capture or tracking on or off, and importing existing work all have a screen in [the wizard](/wizard/overview) that shows you the current state before it changes anything.
+
+  The commands below are the scriptable half of those screens. Throughout these docs a **Wizard / Command** toggle marks a feature that has both — use whichever suits where you are.
+</Note>
+
 ## Grammar
 
 Connection flags are **global** and go *before* the command:

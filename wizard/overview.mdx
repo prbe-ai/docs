@@ -24,6 +24,34 @@ If you already have the CLI, `probe wizard` is the same thing. `npx` exists so t
 
 `install` is a thin alias for `wizard --action configure` — the same flow, not a second implementation of it.
 
+## Everything the wizard does, and its command
+
+Every screen has a scriptable equivalent. Prefer the wizard at a keyboard — it shows you the state before you change it, and it can tell you when a change did not take. Prefer the command in a script.
+
+| What you want to do | In the wizard | As a command |
+| --- | --- | --- |
+| Set Probe up on this device | **Install Probe** | `probe wizard --action configure --yes` |
+| Update the CLI and plugins | **Update to the latest version** | `probe wizard --action update` |
+| Remove Probe from this device | **Uninstall Probe** | `probe wizard --action uninstall --yes` |
+| Import a folder of work | **Import research work** | `probe backfill <dir> --project <slug>` |
+| Import saved coding sessions | **Import research work** | `probe backfill --transcripts-only` |
+| Check on a running import | **Existing imports** | `probe wizard --action imports` |
+| Turn tracking (CLI + MCP) on or off | **Settings** | `probe wizard --tracking` / `--no-tracking` |
+| Turn session capture on or off | **Settings** | `probe wizard --capture` / `--no-capture` |
+| Turn the managed rules block on or off | **Settings** | `probe wizard --agent-rules` / `--no-agent-rules` |
+| Turn automatic updates on or off | **Settings** | `probe wizard --auto-update` / `--no-auto-update` |
+| Change what new sessions default to | **Settings → Probe in new sessions** | `probe session default on` |
+| Sign in | **Account → Sign in** | `probe login` |
+| Sign in as a different account | **Account → Sign in as a different account** | `probe login --context <name>` |
+| Switch to an account already on this device | **Account → Switch to an account saved here** | `probe context use <name>` |
+| Sign out | **Sign out** | `probe logout` |
+| Diagnose a problem | **Diagnose a problem** | `probe doctor` |
+| See the commands the wizard would run | — | `probe wizard --action manual` |
+
+<Info>
+  Three things have no wizard screen, deliberately. **Minting a token** (`probe token create`) requires a human in a browser and prints a secret you must copy. **The status line** (`probe statusline install`) writes into your agent's own settings file. **Workspace write permissions** (`probe access-group`, `probe workspace writers`) are a team-admin surface, not a device one.
+</Info>
+
 ## On this device
 
 Every screen of the menu sits under a live summary of the machine. It is the reason the menu is short: you choose against real state rather than guessing which action you need.

@@ -10,6 +10,10 @@ probe statusline install
 
 Adds a Probe segment under Claude Code's input box, so you can see at a glance whether what you are doing is being recorded.
 
+<Note>
+  This is one of the few things with no wizard screen: it writes into your agent's own settings file rather than Probe's, so it stays an explicit command you run.
+</Note>
+
 | Shows | Means |
 |---|---|
 | `○ untracked` | This conversation is not recording |
@@ -38,7 +42,7 @@ If the indicator says `untracked` and you expected otherwise, `probe session sta
 
 ## Changing what it reports
 
-```
+```text
 /probe on
 ```
 

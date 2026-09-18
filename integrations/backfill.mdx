@@ -1,17 +1,51 @@
 ---
 title: "Backfill"
-description: "probe backfill — point an agent at a folder of work you have already done."
+description: "Import work you have already done — a folder, saved coding sessions, or both."
 icon: "clock-rotate-left"
 ---
 
-```bash
-probe backfill /path/to/work --project existing-project
-probe backfill --transcripts-only
-```
+Backfill is the no-connector path: it reads a folder on this machine, works out what is in it, uploads what it finds and describes it.
 
-Backfill is the no-connector path: it reads a folder on this machine, works out what is in it, uploads what it finds and describes it. The [wizard](/wizard/import) runs the same thing with a screen and in the background; the CLI runs it synchronously.
+## Starting an import
 
-Both share the same file-coverage records and delivery receipts, so **completed uploads are reused whichever entry point you use.**
+<Tabs>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research            # → Your research → Import research work
+    ```
+
+    The wizard is the better door for this, and not only because it has screens. It runs the import **in the background**, so a large folder does not hold your terminal; it survives a disconnect and resumes after a restart; and it shows you the plan before anything uploads.
+
+    <CardGroup cols={2}>
+      <Card title="Import research work" icon="box-archive" href="/wizard/import">
+        The picker, the two run modes, and what gets reviewed before it writes.
+      </Card>
+
+      <Card title="Existing imports" icon="list-check" href="/wizard/imports">
+        Watch one, read its result, resume what was interrupted.
+      </Card>
+    </CardGroup>
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe backfill /path/to/work --project existing-project
+    probe backfill --transcripts-only
+    ```
+
+    Direct `probe backfill` is **synchronous** — it holds the terminal until it finishes.
+
+    To drive the wizard's own background lane unattended instead:
+
+    ```bash
+    probe wizard --action backfill --folder /srv/work/folding --yes
+    probe wizard --action transcripts --yes
+    ```
+
+    `--folder` is required headless: without it the wizard opens a picker, which needs a TTY.
+  </Tab>
+</Tabs>
+
+Both doors share the same file-coverage records and delivery receipts, so **completed uploads are reused whichever one you came through** — switching between them costs nothing.
 
 ## What it reads
 
@@ -59,11 +93,3 @@ Imports saved coding-agent histories without touching any folder. The picker det
 <Info>
 Protocol-2 transcript imports require a compatible engine, API and tap release. An older combination imports at the earlier protocol rather than failing.
 </Info>
-
-## Watching progress
-
-```bash
-npx probe-research          # → Existing imports
-```
-
-See [Existing imports](/wizard/imports) for the states and what each one means.

@@ -7,10 +7,18 @@ icon: "wrench"
 Start here:
 
 ```bash
+npx probe-research            # → Help → Diagnose a problem
+```
+
+The wizard's **Diagnose** screen runs the report below and shows it against the live state of the device — and from there you can act on what it found without leaving: re-pair capture, switch account, resume an import, reinstall a plugin.
+
+If you would rather have the report alone, or need it in a script:
+
+```bash
 probe doctor
 ```
 
-Read-only. It prints versions, install method, account, plugin status, capture status and credential source, agent rules, team-note sync, auto-update with its **last attempt**, and the outbox.
+Read-only either way. It prints versions, install method, account, plugin status, capture status and credential source, agent rules, team-note sync, auto-update with its **last attempt**, and the outbox.
 
 ## "My run recorded nothing"
 
@@ -25,6 +33,14 @@ Read-only. It prints versions, install method, account, plugin status, capture s
   </Accordion>
 
   <Accordion title="Check you are in the right account" icon="user">
+    The wizard names the active account in its **On this device** block on every screen, and **Account → Switch to an account saved here** moves you without a browser round trip.
+
+    ```bash
+    npx probe-research --action account
+    ```
+
+    Or read it directly:
+
     ```bash
     probe context list
     probe whoami
@@ -86,6 +102,12 @@ probe doctor            # "Credential from" and the capture status
 probe session status    # the capture block: running, pid, reason
 ```
 
+To re-pair it, toggle **Session capture** off and on again in the wizard's [Settings](/wizard/settings) — that clears the credential and the killswitch together and authorizes the device afresh, which is what a half-configured pairing needs.
+
+```bash
+npx probe-research --action settings
+```
+
 <Warning>
 **Working MCP tools do not prove capture is running.** The two plugins fail independently. On pi especially, a settings file can load the skills and the MCP manifest without ever spawning the capture daemon — tracking reads as on while nothing is captured.
 
@@ -94,7 +116,15 @@ A worktree is the other case: it misses the project-local settings that re-enabl
 
 ## "I signed out but it is still authenticated"
 
-A credential in your shell outranks the config file. Check for `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` and `PROBE_SERVICE_TOKEN` — no command can unset a variable in your parent shell, so the wizard names them instead.
+A credential in your shell outranks the config file. Check for `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` and `PROBE_SERVICE_TOKEN` — no command can unset a variable in your parent shell.
+
+Open the wizard rather than guessing which one won: it names any it finds, and its **Account** screen tells you whether the credential that is answering is the file's or the shell's.
+
+```bash
+npx probe-research --action account
+```
+
+See [Auth and accounts](/cli/auth#resolution-order).
 
 ## "Restore says files are missing"
 

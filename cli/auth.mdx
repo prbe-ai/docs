@@ -1,34 +1,138 @@
 ---
-title: "Authentication"
-description: "Device flow, tokens and scopes, named contexts, and how a credential is actually resolved."
+title: "Authentication and accounts"
+description: "Signing in, switching accounts and signing out — through the wizard, and the scriptable equivalents."
 icon: "key"
+sidebarTitle: "Auth and accounts"
 ---
+
+Almost everything on this page is a screen in the wizard. Reach for the wizard when you are at a keyboard; reach for the commands when a script is.
+
+```bash
+npx probe-research            # → Account
+```
+
+| What you want | The wizard | The scriptable form |
+| --- | --- | --- |
+| Sign in | **Account → Sign in** | `probe login` |
+| Sign in as someone else | **Account → Sign in as a different account** | `probe login --context <name>` |
+| Switch between accounts already on this device | **Account → Switch to an account saved here** | `probe context use <name>` |
+| Sign out | **Sign out** (on the main menu) | `probe logout` |
+| See who you are | The **On this device** block, every screen | `probe whoami` |
+| Mint a token for CI | — | `probe token create` |
+
+<Tip>
+  The wizard shows you the state before you act on it: which account is answering, whether its credential still validates, and whether a shell variable is overriding the file. That is the reason to prefer it — the commands each do one thing and none of them tells you what the others found.
+</Tip>
 
 ## Signing in
 
-```bash
-probe login
-```
+<Tabs>
+  <Tab title="The wizard">
+    ```bash
+    npx probe-research install
+    ```
 
-Bare `probe login` runs the browser handoff (RFC 8628 device flow with PKCE): you approve in the dashboard, and there is no token to see or paste. The result is written to `~/.config/probe/config.json`.
+    Authorization happens before any other screen: the wizard opens your browser and you approve the device there. Nothing is pasted.
 
-```bash
-probe whoami            # the current principal
-```
+    If the website gave you a ten-character code, pass it as an argument and the wizard uses it instead:
+
+    ```bash
+    npx probe-research install ABCD123456
+    ```
+
+    On a device that already holds a credential, it asks whether to keep the current account or continue with the code — which is how a wrong-account install gets corrected.
+  </Tab>
+  <Tab title="The command">
+    ```bash
+    probe login
+    ```
+
+    Bare `probe login` runs the same browser handoff (RFC 8628 device flow with PKCE). The result is written to `~/.config/probe/config.json`.
+
+    ```bash
+    probe whoami
+    ```
+  </Tab>
+  <Tab title="Without a browser">
+    ```bash
+    probe login --token probe_pat_xxxxxxxx              # verified against GET /v1/me
+    probe login --endpoint-only --base-url https://api.example.internal
+    probe login --ingest-token ... --hmac-secret ...    # passive-push credentials
+    ```
+
+    Or skip the file entirely and set `PROBE_TOKEN` in the environment. This is the air-gapped path.
+  </Tab>
+</Tabs>
 
 <Tip>
-You can skip `probe login` entirely. The first `client.run()` or `probe run start` with no token triggers the same browser approval inline on a TTY and persists the result. `PROBE_AUTO_LOGIN=0` disables that; headless and CI keep a clean `AuthError` and should set `PROBE_TOKEN`.
+You can skip signing in as a separate step. The first `client.run()` or `probe run start` with no token triggers the same browser approval inline on a TTY and persists the result. `PROBE_AUTO_LOGIN=0` disables that; headless and CI keep a clean `AuthError` and should set `PROBE_TOKEN`.
 </Tip>
 
-### Without a browser
+## Switching accounts
 
-```bash
-probe login --token probe_pat_xxxxxxxx              # verified against GET /v1/me
-probe login --endpoint-only --base-url https://api.example.internal
-probe login --ingest-token ... --hmac-secret ...    # passive-push credentials
-```
+One machine can hold several accounts — a second team, a staging endpoint, a laptop handed on. Exactly one is active.
+
+<Tabs>
+  <Tab title="The wizard">
+    ```bash
+    npx probe-research --action account
+    ```
+
+    **Switch to an account saved here** lists every account this device already holds, with its endpoint and whether it can still authenticate, and switches to the one you pick. No browser needed.
+
+    See [Accounts](/wizard/account).
+  </Tab>
+  <Tab title="The commands">
+    Accounts are stored as named **contexts**, the way `kubectl` stores clusters.
+
+    ```bash
+    probe context list                     # every saved account, credentials redacted
+    probe context show staging             # how one resolves, environment overrides included
+    probe context use staging              # switch (creates it empty if new)
+    probe context delete staging           # remove it and its stored credentials
+    ```
+
+    A context carries the endpoint, its credentials, and its **anchors** — the active workspace and project that scope commands like `probe run start`.
+  </Tab>
+</Tabs>
+
+<Warning>
+  The same project name can exist in two tenants. Under the wrong context a list command returns the _other_ tenant's same-named copy instead of erroring, so a healthy project can read as wiped. **Check which account is active before concluding anything is missing** — the wizard's summary block, or `probe context list`.
+</Warning>
+
+## Signing out
+
+<Tabs>
+  <Tab title="The wizard">
+    ```bash
+    npx probe-research            # → Sign out
+    ```
+
+    It names what it is about to do, and it names anything it cannot do — an exported credential in your shell, for instance.
+  </Tab>
+  <Tab title="The command">
+    ```bash
+    probe logout
+    ```
+  </Tab>
+</Tabs>
+
+Either way, signing out is not just forgetting a token:
+
+- the token this device holds is **revoked**, not merely deleted
+- the active context is cleared
+- session capture stops, so it cannot keep uploading to the account you just left
+- local import history is cleared
+
+**The plugins stay installed.** Removing those is Uninstall — see [Diagnose and repair](/wizard/diagnose#uninstalling).
+
+<Warning>
+  Credentials in your shell outrank the config file. `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` and `PROBE_SERVICE_TOKEN` are all checked before it, so after a sign-out the CLI still authenticates if one of those is exported. No command can unset a variable in your parent shell — the wizard and `probe doctor` name any they find instead.
+</Warning>
 
 ## Tokens
+
+This one has no wizard screen: minting is deliberately a browser act, and the secret is yours to copy.
 
 ```bash
 probe token create --name ci-bot --scope read --scope write
@@ -54,28 +158,9 @@ The secret is printed **once** and never stored. Copy it then.
 
 Revoking a teammate's token needs the dashboard.
 
-## Named contexts
-
-One machine can hold several accounts, `kubectl`-style. Exactly one is active.
-
-```bash
-probe context list                     # credentials redacted
-probe context show staging             # how it resolves, environment overrides included
-probe context use staging
-probe context delete staging
-
-probe login --context staging          # sign in under a named context
-```
-
-A context carries the endpoint, its credentials, and its **anchors** — the active workspace and project that scope commands like `probe run start`.
-
-<Warning>
-The same project name can exist in two tenants. Under the wrong context a list command returns the *other* tenant's same-named copy instead of erroring, so a healthy project can read as wiped. **Check `probe context list` before concluding anything is missing.**
-</Warning>
-
 ## The MCP credential
 
-The MCP server is read-only and prefers a separately minted read-only token.
+The MCP server is read-only and prefers a separately minted read-only token. The wizard pairs one during install; these are for inspecting and rotating it.
 
 ```bash
 probe mcp status            # where the credential comes from, and whether it still works
@@ -102,19 +187,13 @@ PROBE_SERVICE_TOKEN    service      → machine callers
 
 Plus `PROBE_BASE_URL` for the endpoint and `PROBE_HMAC_SECRET` for optional body signing.
 
-<Warning>
-This is why a sign-out can look like it did not work. `probe logout` revokes the device token and clears the file — but an exported `PROBE_TOKEN` still authenticates, and no command can unset a variable in your parent shell. `probe doctor` and the wizard both name any they find.
-</Warning>
-
-## Signing out
-
 ```bash
-probe logout
+probe doctor        # "Credential from" says which one actually resolved
 ```
 
-Stops imports, **revokes** the calling token (not merely forgets it), and clears local config. Session capture stops so it cannot keep uploading to the account you just left.
-
 ## In CI
+
+Skip the wizard entirely.
 
 ```bash
 export PROBE_TOKEN=probe_pat_xxxxxxxx
@@ -122,4 +201,4 @@ export PROBE_BASE_URL=https://api.research.prbe.ai
 export PROBE_AUTO_LOGIN=0
 ```
 
-Mint the token with `--scope read --scope write` unless the job genuinely needs to delete things.
+Mint the token with `--scope read --scope write` unless the job genuinely needs to delete things. For configuring a machine unattended, see [Unattended use](/wizard/flags).
