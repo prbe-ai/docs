@@ -8,17 +8,21 @@ Run `probe <group> --help` for the flags on any of these.
 
 ## Setup and account
 
-| Command | Does |
-|---|---|
-| `probe install` | Straight into the guided install |
-| `probe wizard` | The [setup wizard](/wizard/overview): install, import, configure, diagnose |
-| `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works |
-| `probe login` | Browser device flow, or `--token` for the paste path |
-| `probe logout` | Stop imports, revoke the calling token, clear local config |
-| `probe whoami` | The current principal |
-| `probe token` | `list` · `create` · `revoke` |
-| `probe context` | `list` · `show` · `use` · `delete` — named local accounts |
-| `probe mcp` | `status` · `headers` · `env` · `token set` / `unset` |
+<Note>
+  Everything in this section has a wizard screen, and the wizard is the better door at a keyboard — it shows you the current state before it changes anything. These are the scriptable equivalents. The full map is on [the wizard overview](/wizard/overview).
+</Note>
+
+| Command | Does | In the wizard |
+| --- | --- | --- |
+| `probe install` | Straight into the guided install | **Install Probe** |
+| `probe wizard` | The [setup wizard](/wizard/overview) itself | — |
+| `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works | **Diagnose a problem** |
+| `probe login` | Browser device flow, or `--token` for the paste path | **Account → Sign in** |
+| `probe logout` | Stop imports, revoke the calling token, clear local config | **Sign out** |
+| `probe whoami` | The current principal | the **On this device** block |
+| `probe context` | `list` · `show` · `use` · `delete` — named local accounts | **Account → Switch** |
+| `probe token` | `list` · `create` · `revoke` | none — minting needs a browser |
+| `probe mcp` | `status` · `headers` · `env` · `token set` / `unset` | paired during install |
 
 ## Structure
 
@@ -83,6 +87,10 @@ Run `probe <group> --help` for the flags on any of these.
 | `probe statusline` | `install` · `uninstall` · `status` · `show` |
 
 ## Imports
+
+<Note>
+  These run in the foreground and hold the terminal. The wizard's **Import research work** runs the same imports in the background, survives a disconnect, and resumes after a restart — prefer it for anything large. See [Backfill](/integrations/backfill).
+</Note>
 
 | Command | Does |
 |---|---|

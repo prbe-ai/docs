@@ -51,7 +51,7 @@ They are separate because they are separate consent decisions.
 
 One control governs the whole conversation.
 
-```
+```text
 /probe on      reads and writes
 /probe read    search yes, record no
 /probe off     no calls at all
@@ -64,13 +64,39 @@ One control governs the whole conversation.
 **Only the researcher moves the switch.** Typed bare by you it toggles between `on` and `read`; `off` is not on that cycle and is reached only by typing it. An agent invoking the skill itself loads guidance and never changes the state.
 </Note>
 
-From a shell:
+The switch has three scopes, and each has a natural home.
 
-```bash
-probe session status            # what this conversation is doing, and how that was decided
-probe session state read        # set it for this conversation
-probe session default on        # the device-wide default for new sessions
-```
+<Tabs>
+  <Tab title="This conversation">
+    Type it in the agent:
+
+    ```text
+    /probe on
+    /probe read
+    /probe off
+    ```
+
+    Or from a shell, against the current session:
+
+    ```bash
+    probe session state read
+    probe session status         # what this conversation is doing, and how that was decided
+    ```
+  </Tab>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research --action settings     # → Probe in new sessions
+    ```
+
+    A cycling row with three states, each spelling out what it means. This is the device-wide default every new session starts at. See [Settings](/wizard/settings).
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe session default on     # the device-wide default for new sessions
+    probe session default        # read it back
+    ```
+  </Tab>
+</Tabs>
 
 `probe session status` returns the full decision, including which default applied and whether the capture daemon is actually running — so "tracking is on" and "anything is being recorded" can be told apart.
 
@@ -88,11 +114,22 @@ The read/write split is structural, not a policy setting. An agent with only the
 
 The install writes a managed Probe block into each selected agent's global instruction file, prompting it to search Probe and track research there. Everything outside the block is left alone.
 
-```bash
-probe agent-rules refresh       # rewrite the block when it is older than this CLI
-```
+<Tabs>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research --action settings     # → Rules in your global instructions
+    ```
 
-Turn it off from the wizard's [Settings](/wizard/settings) screen, or with `--no-agent-rules`.
+    Tick it on or off. The wizard applies it to every agent you have configured, and leaves untouched rows exactly as they were.
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe wizard --agent-rules --yes       # on
+    probe wizard --no-agent-rules --yes    # off
+    probe agent-rules refresh              # rewrite the block when it is older than this CLI
+    ```
+  </Tab>
+</Tabs>
 
 <CardGroup cols={2}>
   <Card title="Skills" icon="wand-magic-sparkles" href="/agents/skills">

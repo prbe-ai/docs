@@ -1,12 +1,10 @@
 ---
 title: "Installation"
-description: "Every way to install Probe — CLI, SDK, agent plugins, MCP — and how to update or remove them."
+description: "Install, update and remove Probe — through the wizard, with the commands underneath."
 icon: "download"
 ---
 
-There is one guided path and several manual ones. Start with the guided path unless you have a reason not to.
-
-## The guided path
+One command sets everything up. The tabs on this page show the wizard first and the equivalent command second, for when a script is doing the work.
 
 ```bash
 npx probe-research install
@@ -14,15 +12,67 @@ npx probe-research install
 
 The npm package is a thin launcher: it resolves and runs the real CLI, so you do not need Python tooling set up first. It signs you in, installs the plugins for the coding agents you pick, and offers to import work you already have.
 
-`npx probe-research` with no verb opens the [wizard's main menu](/wizard/overview) instead — the right entry point when you are managing an install rather than creating one.
-
-<Card title="Walk through the wizard" icon="wand-magic-sparkles" href="/wizard/install">
-  What each of the four install screens asks, and what it does.
+<Card title="Walk through the wizard" icon="wand-magic-sparkles" horizontal href="/wizard/install">
+  Four screens, and what each one asks.
 </Card>
+
+## Setting up a device
+
+<Tabs>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research install
+    ```
+
+    Pick your coding agents, review what will be set up, install, and import. `npx probe-research` with no verb opens the main menu instead — the right entry point when you are managing an install rather than creating one.
+
+    Add `--agent codex` for Codex, or `--agent both` for Claude Code and Codex together.
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe wizard --action configure \
+      --agent both --tracking --capture --auto-update --agent-rules --yes
+    ```
+
+    Same flow, no prompts. **An omitted flag preserves whatever is already configured**, so this is safe to run repeatedly against a fleet. See [unattended use](/wizard/flags).
+  </Tab>
+  <Tab title="By hand">
+    ```bash
+    probe wizard --action manual
+    ```
+
+    Prints every command the wizard runs, for the agents you name — generated from the same constants, so it cannot drift. This is the path for air-gapped machines and for anyone who wants to read the commands before running them.
+
+    <Accordion title="What it prints, for Claude Code">
+      ```bash
+      claude plugin marketplace add prbe-ai/research-os-agent
+      claude plugin install probe-research@research-os-agent       # tracking + MCP
+      claude plugin install probe-research-tap@research-os-agent   # session capture
+      ```
+    </Accordion>
+
+    <Accordion title="What it prints, for Codex">
+      ```bash
+      codex plugin marketplace add prbe-ai/research-os-agent
+      codex plugin add probe-research@research-os-agent
+      codex plugin add probe-research-tap@research-os-agent
+      npx probe-research install --agent codex
+      ```
+
+      The last step authorizes this Codex device — Codex needs its own capture credential, separate from Claude Code's.
+    </Accordion>
+
+    <Warning>
+      On pi, check the result rather than assuming it. A settings file that carries the package without its extensions loads the skills and the MCP manifest but never spawns the capture daemon — tracking reads as on while nothing is captured. `probe doctor` names that state.
+    </Warning>
+  </Tab>
+</Tabs>
+
+The two plugins are separate on purpose, because they are separate consent decisions: **tracking** adds skills and read-only search, **tap** streams your sessions to the team knowledgebase.
 
 ## CLI and SDK only
 
-If you are instrumenting a training script and no coding agent is involved:
+If you are instrumenting a training script and no coding agent is involved, skip the wizard entirely:
 
 <CodeGroup>
 ```bash pip
@@ -38,12 +88,7 @@ uv add probe-research
 ```
 </CodeGroup>
 
-One package ships both surfaces:
-
-- `import probe` — the [Python SDK](/sdk/quickstart)
-- `probe` — the [command-line tool](/cli/overview)
-
-They are the same implementation with different ergonomics, so they have capability parity.
+One package ships both surfaces — `import probe` (the [SDK](/sdk/quickstart)) and `probe` (the [CLI](/cli/overview)). They are the same implementation with different ergonomics, so they have capability parity.
 
 Then sign in:
 
@@ -51,52 +96,9 @@ Then sign in:
 probe login
 ```
 
-<Card title="Authentication in full" icon="key" href="/cli/auth">
-  Device flow, tokens, contexts, environment variables, and air-gapped sign-in.
+<Card title="Auth and accounts" icon="key" href="/cli/auth">
+  Signing in, switching accounts, tokens, contexts, and air-gapped sign-in.
 </Card>
-
-## Agent plugins, by hand
-
-The wizard runs exactly these commands. Running them yourself is supported — `probe wizard --action manual` prints the current set, generated from the same constants, so it cannot drift from what the wizard does.
-
-<Tabs>
-  <Tab title="Claude Code">
-    ```bash
-    claude plugin marketplace add prbe-ai/research-os-agent
-    claude plugin install probe-research@research-os-agent       # tracking + MCP
-    claude plugin install probe-research-tap@research-os-agent   # session capture
-    ```
-
-    Then finish setup from inside Claude Code with the Probe setup command, or from a terminal:
-
-    ```bash
-    npx probe-research install --agent claude
-    ```
-  </Tab>
-
-  <Tab title="Codex">
-    ```bash
-    codex plugin marketplace add prbe-ai/research-os-agent
-    codex plugin add probe-research@research-os-agent
-    codex plugin add probe-research-tap@research-os-agent
-    npx probe-research install --agent codex
-    ```
-
-    The third step authorizes this Codex device — Codex needs its own capture credential, separate from Claude Code's.
-  </Tab>
-
-  <Tab title="pi">
-    ```bash
-    npx probe-research install --agent pi
-    ```
-
-    <Warning>
-    On pi, check the result rather than assuming it. A settings file that carries the package without its extensions loads the skills and the MCP manifest but never spawns the capture daemon — tracking reads as on while nothing is captured. `probe doctor` names that state.
-    </Warning>
-  </Tab>
-</Tabs>
-
-The two plugins are separate on purpose, because they are separate consent decisions: **tracking** adds skills and read-only search, **tap** streams your sessions to the team knowledgebase.
 
 ## MCP server
 
@@ -122,39 +124,53 @@ The server prefers `PROBE_MCP_TOKEN`, a separately minted read-only token. It fa
 
 ## Keeping it current
 
-Auto-update is on by default and runs in the background at session start. To check on it:
+Auto-update is on by default and runs in the background at session start.
 
-```bash
-probe doctor                  # prints the LAST UPDATE ATTEMPT, not just the current version
-```
+<Tabs>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research            # → Update to the latest version
+    ```
 
-That last line matters: a detached auto-updater that has been failing silently is otherwise invisible. To update now:
+    The **On this device** block carries a Versions section: what you have installed, what is published, and whether you are current — graded per component, because CLI, SDK, plugin and tap update on their own cadences.
 
-```bash
-npx probe-research            # → Update to the latest version
-```
-
-The wizard's **On this device** block also carries a Versions section: what you have installed, what is published, and whether you are current.
-
-To turn auto-update off, use the wizard's [Settings](/wizard/settings) screen, or:
-
-```bash
-probe wizard --no-auto-update --yes
-```
+    To stop background upgrades, untick **Automatic updates** in [Settings](/wizard/settings).
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe wizard --action update          # update now
+    probe wizard --no-auto-update --yes   # stop background upgrades
+    probe doctor                          # versions, and the LAST UPDATE ATTEMPT
+    ```
+  </Tab>
+</Tabs>
 
 <Note>
-The CLI and the plugins version independently and a machine is routinely current on one and months behind on another. `probe doctor` grades all four components — CLI, SDK, plugin, tap — separately.
+`probe doctor`'s last line matters more than the version numbers: a detached auto-updater that has been failing silently is otherwise invisible.
 </Note>
 
 ## Removing it
 
-```bash
-npx probe-research            # → Uninstall Probe
-```
+<Tabs>
+  <Tab title="Wizard">
+    ```bash
+    npx probe-research            # → Uninstall Probe
+    ```
 
-That stops capture and imports, clears local import history, removes the plugins, and signs this device out — the tokens saved here are revoked. **Nothing already sent to your team's knowledgebase is touched.**
+    Stops capture and imports, clears local import history, removes the plugins, and signs this device out — the tokens saved here are revoked.
 
-To sign out without uninstalling, choose **Sign out** instead; the plugins stay installed.
+    To sign out without uninstalling, choose **Sign out** instead; the plugins stay installed.
+  </Tab>
+  <Tab title="Command">
+    ```bash
+    probe wizard --action uninstall --yes     # remove everything
+    probe logout                              # credentials only; plugins stay
+    probe wizard --no-capture --uninstall --yes   # drop the capture plugin only
+    ```
+  </Tab>
+</Tabs>
+
+**Nothing already sent to your team's knowledgebase is touched.** Uninstalling a client does not delete data.
 
 <Warning>
 Credentials in your shell outrank the config file. If `PROBE_TOKEN`, `PROBE_MCP_TOKEN`, `PROBE_INGEST_TOKEN` or `PROBE_SERVICE_TOKEN` is exported in your environment, signing out clears the file but the CLI still authenticates. The wizard says so when it sees one — it cannot unset a variable in your parent shell.
