@@ -26,7 +26,21 @@ probe wizard [AUTH_CODE] [OPTIONS]
 | `--uninstall` | When turning capture off, also remove the plugin (default: keep it) |
 | `--action <name>` | Skip the menu — see below |
 | `--folder <path>` | Backfill only: the folder to import, skipping the picker. Required headless |
+| `--who-records agent\|daemon` | Who records, for every coding agent on this device: the agent itself, or the Probe daemon (paid plans). Implies `--action recorder`; needs a signed-in device |
 | `-y`, `--yes` | Skip the menu and prompts |
+
+### Signing in only
+
+With `--action login`, these sign the device in and do **nothing else** — no plugin, capture or rule is installed. Given with another action, an install flag or a sign-in code, they are refused rather than silently dropped.
+
+| Flag | Effect |
+| --- | --- |
+| `--token <token>` | Sign in with a dashboard token, no browser (verified against `GET /v1/me`) |
+| `--base-url <url>` | The Probe server to sign in to (self-host) |
+| `--context <name>` | The saved account to create or overwrite (default: the active one) |
+| `--ingest-token <token>` / `--hmac-secret <secret>` | Passive-push credentials to save with it |
+| `--no-browser` | Print the approval link instead of opening a browser |
+| `--endpoint-only` | Save `--base-url` without signing in |
 
 ### Actions
 
@@ -34,9 +48,10 @@ probe wizard [AUTH_CODE] [OPTIONS]
 
 | Action | Opens |
 |---|---|
-| `configure` | The guided install (what `probe install` aliases) |
-| `account` | The account screen |
-| `login` / `logout` | Sign in / sign out, without prompting |
+| `configure` | The guided install (what `npx probe-research install` opens) |
+| `account` | The account screen: switch to or remove another saved account |
+| `login` / `logout` | Sign in (only — see above) / sign out, without the menu |
+| `recorder` | Who records; with `--who-records`, switches it |
 | `settings` | The settings screen |
 | `uninstall` | Remove Probe from this device |
 | `import-research` | The import offer: sessions, a folder, or both |
@@ -65,6 +80,15 @@ probe wizard --no-capture --yes
 
 ```bash Headless folder import
 probe wizard --action backfill --folder /srv/work/folding --yes
+```
+
+```bash Sign a remote GPU box in, and nothing else
+probe wizard --action login --no-browser        # prints the approval link
+probe wizard --action login --token "$PROBE_PAT" --base-url https://api.example.internal
+```
+
+```bash Hand recording to the Probe daemon
+probe wizard --who-records daemon --yes         # prints the daemon's approval link if it has no key
 ```
 
 ```bash Check a fleet without changing it

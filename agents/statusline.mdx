@@ -5,14 +5,10 @@ icon: "bars"
 ---
 
 ```bash
-probe statusline install
+npx probe-research install
 ```
 
-Adds a Probe segment under Claude Code's input box, so you can see at a glance whether what you are doing is being recorded.
-
-<Note>
-  This is one of the few things with no wizard screen: it writes into your agent's own settings file rather than Probe's, so it stays an explicit command you run.
-</Note>
+The wizard's **Install** adds a Probe segment under Claude Code's input box, so you can see at a glance whether what you are doing is being recorded. **Uninstall** removes it again.
 
 | Shows | Means |
 |---|---|
@@ -27,8 +23,9 @@ Installing **wraps** an existing status line rather than replacing it. If you al
 ```bash
 probe statusline status      # whether it is installed, and what else shares the slot
 probe statusline show        # print the segment this session would render right now
-probe statusline uninstall   # remove the segment, restoring what was wrapped
 ```
+
+Uninstalling Probe removes the segment and restores exactly what it wrapped.
 
 `status` prints the settings file it wrote to, the command it installed, and what it chained after — which is the thing to read when two tools are competing for the slot.
 
@@ -47,8 +44,10 @@ If the indicator says `untracked` and you expected otherwise, `probe session sta
 ```
 
 ```bash
-probe session track            # this conversation
-probe session default on       # what new sessions start at
+probe session track                    # this conversation
+probe session default on --folder .    # what new sessions in this folder start at
 ```
+
+What new sessions start at everywhere else is **Defaults → Probe in new sessions** in the wizard (`npx probe-research`).
 
 See [the switch](/agents/overview#the-switch).

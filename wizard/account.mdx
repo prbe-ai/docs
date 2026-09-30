@@ -10,26 +10,25 @@ The wizard signs in before the main menu opens, so most of the time there is not
 probe wizard --action account
 ```
 
-## Four rows
+## The rows
 
 | Row | What it does |
 |---|---|
-| **Sign in** | Approve this device in the browser; the credentials are saved here |
 | **Switch to an account saved here** | Use credentials this device already holds — no browser needed |
+| **Remove a saved account** | Delete another account's saved credentials, after a confirmation. The active one leaves by Sign out |
 | **Sign out** | Revoke this device's token and clear the credentials saved here |
 | **Back** | Return to the main menu. Nothing changes |
 
-On a device that already holds a credential the first row reads **Sign in as a different account** — same action, different sentence, because "Sign in" there looks like a no-op and that is how someone stuck on the wrong account concludes the wizard cannot help them.
+Switch and Remove act on the _other_ saved accounts, so they only appear when this device holds more than one.
 
 ## Several accounts on one device
 
-Probe stores credentials in named **contexts**, the way `kubectl` stores clusters. One device can hold several; exactly one is active.
+Probe stores credentials in named **contexts**, the way `kubectl` stores clusters. One device can hold several; exactly one is active. To add one, sign in to it by name:
 
 ```bash
-probe context list            # every saved account, credentials redacted
-probe context show work       # how one resolves, environment overrides included
-probe context use work        # switch (creates it empty if new)
-probe context delete work     # remove it and its stored credentials
+probe wizard --action login --context work    # sign in to a second account
+probe context list                            # every saved account, credentials redacted
+probe context show work                       # how one resolves, environment overrides included
 ```
 
 Each context carries an endpoint, its credentials, and its anchors — the active workspace and project that scope commands like `probe run start`.
@@ -58,11 +57,12 @@ Credentials in your shell outrank the config file. `PROBE_TOKEN`, `PROBE_MCP_TOK
 For air-gapped machines and CI:
 
 ```bash
-probe login --token probe_pat_xxxxxxxx           # verified against GET /v1/me
-probe login --endpoint-only --base-url https://api.example.internal
+probe wizard --action login --token probe_pat_xxxxxxxx      # verified against GET /v1/me
+probe wizard --action login --no-browser                    # print the approval link instead
+probe wizard --action login --endpoint-only --base-url https://api.example.internal
 ```
 
-Both write `~/.config/probe/config.json`. Or skip the file entirely and set `PROBE_TOKEN` in the environment.
+All three write `~/.config/probe/config.json` and install nothing. Or skip the file entirely and set `PROBE_TOKEN` in the environment.
 
 To mint and manage tokens:
 
@@ -79,6 +79,6 @@ probe token revoke <prefix>   # revoking a teammate's needs the dashboard
 ## For scripts
 
 ```bash
-probe wizard --action login     # never prompts
+probe wizard --action login     # the browser approval, then done — no menu
 probe wizard --action logout    # never prompts
 ```

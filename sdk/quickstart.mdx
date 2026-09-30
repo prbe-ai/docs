@@ -47,7 +47,7 @@ No ambient state at all:
 ```python
 import probe
 
-client = probe.Client()          # resolves credentials from env or `probe login`
+client = probe.Client()          # resolves credentials from env or the wizard's sign-in
 
 # The FIRST run in a new experiment says what you expect to see:
 run = client.run(
@@ -92,7 +92,7 @@ run.finish()                                # flushes the spool, sets status and
 
 Data writes are **fail-open by default**. On failure they spool to disk and return — they do not raise and they do not retry inline.
 
-```
+```text
 ~/.local/state/probe/spool
 ```
 

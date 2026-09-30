@@ -146,7 +146,7 @@ A pinned engine image pins the **kb schema** with it — `kb-migrate` runs alemb
 ## Air-gapped
 
 - Record artifacts as **references** so bytes stay in your own bucket.
-- Sign in with `probe login --token` or `--endpoint-only`, or set `PROBE_TOKEN` and `PROBE_BASE_URL`.
+- Sign in with `probe wizard --action login --base-url <url> --token <token>` (or `--endpoint-only`), or set `PROBE_TOKEN` and `PROBE_BASE_URL`.
 - `probe wizard --action manual` prints the exact commands for setting agents up without a network-assisted install.
 
 ## Compliance

@@ -9,20 +9,17 @@ Run `probe <group> --help` for the flags on any of these.
 ## Setup and account
 
 <Note>
-  Everything in this section has a wizard screen, and the wizard is the better door at a keyboard — it shows you the current state before it changes anything. These are the scriptable equivalents. The full map is on [the wizard overview](/wizard/overview).
+  **Setting the device up is the wizard's alone**: installing, updating, signing in and out, switching accounts and who records all go through `probe wizard` (or `npx probe-research`), at a keyboard or [as flags](/wizard/flags). The commands below read state or manage tokens. The full map is on [the wizard overview](/wizard/overview).
 </Note>
 
 | Command | Does | In the wizard |
 | --- | --- | --- |
-| `probe install` | Straight into the guided install | **Install Probe** |
-| `probe wizard` | The [setup wizard](/wizard/overview) itself | — |
+| `probe wizard` | The [setup wizard](/wizard/overview): install, update, sign in and out, accounts, uninstall | — |
 | `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works | **Diagnose a problem** |
-| `probe login` | Browser device flow, or `--token` for the paste path | **Account → Sign in** |
-| `probe logout` | Stop imports, revoke the calling token, clear local config | **Sign out** |
 | `probe whoami` | The current principal | the **On this device** block |
-| `probe context` | `list` · `show` · `use` · `delete` — named local accounts | **Account → Switch** |
+| `probe context` | `list` · `show` — named local accounts | **Account** switches and removes them |
 | `probe token` | `list` · `create` · `revoke` | none — minting needs a browser |
-| `probe mcp` | `status` · `headers` · `env` · `token set` / `unset` | paired during install |
+| `probe mcp` | `status` · `headers` · `env` | the read token is minted at sign-in |
 
 ## Structure
 
@@ -83,8 +80,8 @@ Run `probe <group> --help` for the flags on any of these.
 
 | Command | Does |
 |---|---|
-| `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default` |
-| `probe statusline` | `install` · `uninstall` · `status` · `show` |
+| `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default --folder` |
+| `probe statusline` | `status` · `show` — Install adds it, Uninstall removes it |
 
 ## Imports
 

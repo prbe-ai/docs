@@ -90,10 +90,10 @@ uv add probe-research
 
 One package ships both surfaces — `import probe` (the [SDK](/sdk/quickstart)) and `probe` (the [CLI](/cli/overview)). They are the same implementation with different ergonomics, so they have capability parity.
 
-Then sign in:
+Then sign in — this signs the device in and installs nothing else:
 
 ```bash
-probe login
+probe wizard --action login
 ```
 
 <Card title="Auth and accounts" icon="key" href="/cli/auth">
@@ -164,7 +164,7 @@ Auto-update is on by default and runs in the background at session start.
   <Tab title="Command">
     ```bash
     probe wizard --action uninstall --yes     # remove everything
-    probe logout                              # credentials only; plugins stay
+    probe wizard --action logout              # credentials only; plugins stay
     probe wizard --no-capture --uninstall --yes   # drop the capture plugin only
     ```
   </Tab>
