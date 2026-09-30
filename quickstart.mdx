@@ -27,7 +27,7 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
 
         Read-only. It prints what is installed, which credentials resolve, whether auto-update is working, and when the last update attempt was.
 
-        In Claude Code, `probe statusline install` adds a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
+        In Claude Code, the install also added a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
       </Step>
       <Step title="Use it">
         In your agent, the switch is `/probe`:
@@ -67,10 +67,10 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
       </Step>
       <Step title="Sign in">
         ```bash
-        probe login
+        probe wizard --action login
         ```
 
-        This opens a browser device flow. You approve the device in the dashboard; nothing is pasted. The credential is written to `~/.config/probe/config.json`.
+        This opens a browser device flow and signs the device in — nothing else is installed. You approve the device in the dashboard; nothing is pasted. The credential is written to `~/.config/probe/config.json`.
 
         <Tip>
           You can skip this step entirely. The first `probe.init()` or `probe run start` with no token triggers the same browser approval inline, as long as you are on a TTY. In CI, set `PROBE_TOKEN` instead — headless callers get a clean `AuthError` rather than a hung prompt.

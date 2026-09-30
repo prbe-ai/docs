@@ -20,9 +20,9 @@ If you already have the CLI, `probe wizard` is the same thing. `npx` exists so t
 | Command | Opens on | Use it when |
 |---|---|---|
 | `npx probe-research` / `probe wizard` | The main menu | You are managing an install, or you do not yet know what you want |
-| `npx probe-research install` / `probe install` | Straight into the guided install | You have already decided |
+| `npx probe-research install` / `probe wizard --action configure` | Straight into the guided install | You have already decided |
 
-`install` is a thin alias for `wizard --action configure` — the same flow, not a second implementation of it.
+`install` is the launcher's word for `wizard --action configure` — the same flow, not a second implementation of it.
 
 ## Everything the wizard does, and its command
 
@@ -40,23 +40,24 @@ Every screen has a scriptable equivalent. Prefer the wizard at a keyboard — it
 | Turn session capture on or off | **Settings** | `probe wizard --capture` / `--no-capture` |
 | Turn the managed rules block on or off | **Settings** | `probe wizard --agent-rules` / `--no-agent-rules` |
 | Turn automatic updates on or off | **Settings** | `probe wizard --auto-update` / `--no-auto-update` |
-| Change what new sessions default to | **Settings → Probe in new sessions** | `probe session default on` |
-| Sign in | **Account → Sign in** | `probe login` |
-| Sign in as a different account | **Account → Sign in as a different account** | `probe login --context <name>` |
-| Switch to an account already on this device | **Account → Switch to an account saved here** | `probe context use <name>` |
-| Sign out | **Sign out** | `probe logout` |
+| Change what new sessions default to | **Defaults → Probe in new sessions** | `probe wizard --action defaults` |
+| Change who records (the agent or the Probe daemon) | **Defaults → Who records** | `probe wizard --who-records agent\|daemon --yes` |
+| Sign in | Before the main menu opens | `probe wizard --action login` |
+| Sign in to a second account | — | `probe wizard --action login --context <name>` |
+| Switch to or remove another account on this device | `--action account` | `probe wizard --action account` |
+| Sign out | **Sign out** | `probe wizard --action logout` |
 | Diagnose a problem | **Diagnose a problem** | `probe doctor` |
 | See the commands the wizard would run | — | `probe wizard --action manual` |
 
 <Info>
-  Three things have no wizard screen, deliberately. **Minting a token** (`probe token create`) requires a human in a browser and prints a secret you must copy. **The status line** (`probe statusline install`) writes into your agent's own settings file. **Workspace write permissions** (`probe access-group`, `probe workspace writers`) are a team-admin surface, not a device one.
+  Two things have no wizard screen, deliberately. **Minting a token** (`probe token create`) requires a human in a browser and prints a secret you must copy. **Workspace write permissions** (`probe access-group`, `probe workspace writers`) are a team-admin surface, not a device one. The Claude Code status line comes with **Install** and goes with **Uninstall**.
 </Info>
 
 ## On this device
 
 Every screen of the menu sits under a live summary of the machine. It is the reason the menu is short: you choose against real state rather than guessing which action you need.
 
-```
+```text
 On this device:
 
   Claude Code                  MCP on · capture on

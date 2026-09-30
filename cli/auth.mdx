@@ -5,18 +5,19 @@ icon: "key"
 sidebarTitle: "Auth and accounts"
 ---
 
-Almost everything on this page is a screen in the wizard. Reach for the wizard when you are at a keyboard; reach for the commands when a script is.
+Everything on this page that changes the device goes through the wizard. At a keyboard, open it; in a script, give it the same answers as flags.
 
 ```bash
-npx probe-research            # → Account
+npx probe-research            # signs in first, then the main menu
 ```
 
-| What you want | The wizard | The scriptable form |
+| What you want | The wizard | As flags |
 | --- | --- | --- |
-| Sign in | **Account → Sign in** | `probe login` |
-| Sign in as someone else | **Account → Sign in as a different account** | `probe login --context <name>` |
-| Switch between accounts already on this device | **Account → Switch to an account saved here** | `probe context use <name>` |
-| Sign out | **Sign out** (on the main menu) | `probe logout` |
+| Sign in | Before the main menu opens | `probe wizard --action login` |
+| Sign in to a second account | — | `probe wizard --action login --context <name>` |
+| Switch between accounts already on this device | **Account → Switch to an account saved here** | `probe wizard --action account` |
+| Remove another account saved here | **Account → Remove a saved account** | `probe wizard --action account` |
+| Sign out | **Sign out** (on the main menu) | `probe wizard --action logout` |
 | See who you are | The **On this device** block, every screen | `probe whoami` |
 | Mint a token for CI | — | `probe token create` |
 
@@ -42,12 +43,12 @@ npx probe-research            # → Account
 
     On a device that already holds a credential, it asks whether to keep the current account or continue with the code — which is how a wrong-account install gets corrected.
   </Tab>
-  <Tab title="The command">
+  <Tab title="As flags">
     ```bash
-    probe login
+    probe wizard --action login
     ```
 
-    Bare `probe login` runs the same browser handoff (RFC 8628 device flow with PKCE). The result is written to `~/.config/probe/config.json`.
+    The same browser handoff (RFC 8628 device flow with PKCE), and nothing else: it signs this device in and installs nothing. The result is written to `~/.config/probe/config.json`.
 
     ```bash
     probe whoami
@@ -55,10 +56,13 @@ npx probe-research            # → Account
   </Tab>
   <Tab title="Without a browser">
     ```bash
-    probe login --token probe_pat_xxxxxxxx              # verified against GET /v1/me
-    probe login --endpoint-only --base-url https://api.example.internal
-    probe login --ingest-token ... --hmac-secret ...    # passive-push credentials
+    probe wizard --action login --token probe_pat_xxxxxxxx      # verified against GET /v1/me
+    probe wizard --action login --no-browser                    # print the approval link instead
+    probe wizard --action login --endpoint-only --base-url https://api.example.internal
+    probe wizard --action login --ingest-token ... --hmac-secret ...   # passive-push credentials
     ```
+
+    These flags only sign in. Given with another action, an install flag or a website code, they are refused rather than silently dropped.
 
     Or skip the file entirely and set `PROBE_TOKEN` in the environment. This is the air-gapped path.
   </Tab>
@@ -78,21 +82,19 @@ One machine can hold several accounts — a second team, a staging endpoint, a l
     npx probe-research --action account
     ```
 
-    **Switch to an account saved here** lists every account this device already holds, with its endpoint and whether it can still authenticate, and switches to the one you pick. No browser needed.
+    **Switch to an account saved here** lists every other account this device already holds, with its endpoint and whether it can still authenticate, and switches to the one you pick. No browser needed. **Remove a saved account** deletes another account's saved credentials; the active one leaves by **Sign out**.
 
     See [Accounts](/wizard/account).
   </Tab>
-  <Tab title="The commands">
+  <Tab title="Reading them">
     Accounts are stored as named **contexts**, the way `kubectl` stores clusters.
 
     ```bash
     probe context list                     # every saved account, credentials redacted
     probe context show staging             # how one resolves, environment overrides included
-    probe context use staging              # switch (creates it empty if new)
-    probe context delete staging           # remove it and its stored credentials
     ```
 
-    A context carries the endpoint, its credentials, and its **anchors** — the active workspace and project that scope commands like `probe run start`.
+    A context carries the endpoint, its credentials, and its **anchors** — the active workspace and project that scope commands like `probe run start`. Switching and removing are the wizard's account screen.
   </Tab>
 </Tabs>
 
@@ -110,9 +112,9 @@ One machine can hold several accounts — a second team, a staging endpoint, a l
 
     It names what it is about to do, and it names anything it cannot do — an exported credential in your shell, for instance.
   </Tab>
-  <Tab title="The command">
+  <Tab title="As flags">
     ```bash
-    probe logout
+    probe wizard --action logout
     ```
   </Tab>
 </Tabs>
@@ -160,12 +162,10 @@ Revoking a teammate's token needs the dashboard.
 
 ## The MCP credential
 
-The MCP server is read-only and prefers a separately minted read-only token. The wizard pairs one during install; these are for inspecting and rotating it.
+The MCP server is read-only and prefers a separately minted read-only token. The wizard's sign-in mints one alongside your API credential, and **Install** asks for it on its own if this device signed in without one. A token the API now refuses is replaced by signing in again (`probe wizard --action login`).
 
 ```bash
 probe mcp status            # where the credential comes from, and whether it still works
-probe mcp token set <token> # store it — re-run to rotate; it replaces, never appends
-probe mcp token unset
 probe mcp headers           # the Authorization header as JSON
 probe mcp env               # the export line, for clients that only read the environment
 ```
@@ -176,7 +176,7 @@ It falls back to `PROBE_TOKEN` for local development, and exposes no mutation to
 
 Credentials in the **environment outrank the config file**. In order:
 
-```
+```text
 PROBE_TOKEN            user token   → /v1
 PROBE_MCP_TOKEN        read-only    → MCP
 PROBE_INGEST_TOKEN     ingest token → /ingest

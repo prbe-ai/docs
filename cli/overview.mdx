@@ -26,7 +26,7 @@ probe --base-url https://api.example.internal log $RUN loss=0.1
 probe --spool-dir /shared/probe/spool log $RUN loss=0.1
 ```
 
-`probe login` also accepts them directly.
+Signing in to another endpoint takes it as a flag: `probe wizard --action login --base-url <url>`.
 
 | Global flag | Effect |
 |---|---|
@@ -73,12 +73,13 @@ Queued writes are fsynced and atomic, and survive a crash. `probe flush` (an ali
 Most commands default to the active workspace and project of the current context:
 
 ```bash
-probe context use work
 probe workspace use engineering
 probe project use folding
 
 probe run start --experiment dockq        # no --project needed
 ```
+
+The active account is the wizard's to switch (`probe wizard --action account`); `probe context list` shows which one is answering.
 
 Override per call with `--workspace-id`, `--workspace`, or `--project`.
 
