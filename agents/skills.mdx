@@ -89,25 +89,6 @@ Ensures the team note carries nothing false and has not grown past its render bu
 
 The trigger is **size**, not the calendar.
 
-## `/read-rules` and `/set-rule` — workflow memory
-
-<CardGroup cols={2}>
-  <Card title="/read-rules" icon="book-open">
-    Reads the team's stored conventions for the situation you are about to be in. **Before** an irreversible or shared-consequence step, and on arriving in an unfamiliar workspace — never after.
-  </Card>
-  <Card title="/set-rule" icon="gavel">
-    Records one. Fires when you say how something *should* be done, or correct the agent in a way that applies to anyone doing this tomorrow.
-
-    **Nothing is written until you confirm it.**
-  </Card>
-</CardGroup>
-
-Both are behind the workflow-memory rollout. See [Team rules](/tracking/rules).
-
 ## Where skills come from
 
 Skills ship inside the `probe-research` plugin and follow the Agent Skills standard, so they load in any host that implements it. Updating the plugin updates the skills — there is nothing to sync by hand.
-
-<Warning>
-Plugin content cannot vary per user, so a skill gated behind a per-user flag is simply absent from the package while that flag is on. `/set-rule` is the current example: its absence is the gate working, not a broken install.
-</Warning>

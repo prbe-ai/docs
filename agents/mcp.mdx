@@ -22,18 +22,12 @@ Hosted: `https://mcp.research.prbe.ai/mcp`. It ships inside the tracking plugin,
 | `search_knowledge` | "Find things about X" — exact + semantic search with per-result provenance |
 | `entity` | "Show me this thing" — one entity through a purpose-shaped `view` |
 | `metrics` | "What are the numbers?" — one run's metrics at the grain you ask for |
-| `probe_procedures` | "What are this team's rules for what I'm about to do?" |
 | `find_papers` | "What does the literature report?" — 40M+ abstracts, and reading the papers |
+| `query_sql` | "Exactly how many?" — one read-only SQL `SELECT` over the research tables, for counts, joins and checking a number |
 
 <Note>
 **Thin harness, fat skills.** Coverage grows through `entity`'s `view` and `filters` parameters, never through more tools. `browse` is the one addition that cleared that bar, because search ranks by relevance to a query and therefore needs you to already know what to search for.
 </Note>
-
-### `probe_procedures` may be absent
-
-It is behind a per-user feature flag, and the hosted server does not advertise it to accounts outside the rollout. Its absence from the tool list is the gate working.
-
-It distinguishes four ways of returning zero rules in `completeness` — no engine wired, the workspace never opted in, nobody seeded the vocabulary, and the team has not written one down. Only the last is an answer.
 
 ### `find_papers`
 
