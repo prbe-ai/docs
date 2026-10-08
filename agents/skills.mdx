@@ -10,7 +10,7 @@ Skills are instructions the agent loads when a situation matches. Most fire on t
 
 The one skill that changes state rather than behaviour.
 
-```
+```text
 /probe on      reads and writes
 /probe read    search yes, record no
 /probe off     no calls at all
@@ -23,6 +23,8 @@ States are stored as `full` / `read-only` / `off` — the older spelling, kept b
 <Note>
 This skill does not track anything. It only moves the switch — and only when you move it.
 </Note>
+
+It also covers `.probe.config`, the gitignore-style list of paths Probe never records whatever the switch says. See [Keep folders out of Probe](/agents/probe-config).
 
 ## `/track-work` — the whole arc
 
