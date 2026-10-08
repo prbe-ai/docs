@@ -1,0 +1,93 @@
+---
+title: "Keep folders out of Probe"
+sidebarTitle: ".probe.config"
+description: "A gitignore-style .probe.config lists the paths Probe never records, from any session, wherever it started."
+icon: "eye-slash"
+---
+
+A `.probe.config` file lists paths Probe must never record. Put one in any folder: it covers that folder and everything below it, in the same syntax as a `.gitignore`. It works whichever folder your coding agent was started in.
+
+```text ~/code/client-x/.probe.config
+# nothing in this repo is recorded
+*
+```
+
+<Note>
+  A `.probe.config` stops **recording**: no run is opened there, and no artifact, note or daemon record is made about those paths. Searching your team's history still works, and session transcripts are still uploaded.
+</Note>
+
+## Common setups
+
+<Tabs>
+  <Tab title="One repo out">
+    In the repo's root:
+
+    ```text .probe.config
+    *
+    ```
+  </Tab>
+  <Tab title="Only some repos in">
+    In the folder that holds your repos:
+
+    ```text ~/code/.probe.config
+    /*
+    !/repo-a/
+    !/repo-b/
+    ```
+
+    <Warning>
+      Use `/*`, not `*`. As in git, `*` matches at every depth, so `*` then `!/repo-a/` still excludes every file **inside** repo-a.
+    </Warning>
+  </Tab>
+  <Tab title="Some paths out">
+    ```text .probe.config
+    data/
+    secrets/
+    *.ckpt
+    ```
+  </Tab>
+  <Tab title="Machine-wide">
+    `~/.probe.config` applies to everything under your home folder.
+  </Tab>
+</Tabs>
+
+## How a path is decided
+
+<Steps>
+  <Step title="Walk up from the path">
+    Every `.probe.config` from the path up to `/` counts, including files above a repository's root. A folder without one inherits its parents' rules.
+  </Step>
+  <Step title="A match wins">
+    If a rule excludes the path, nothing about it is recorded. `/probe on` cannot override it; edit the file instead.
+  </Step>
+  <Step title="No match: the session decides">
+    Otherwise the session's `/probe on`, `read` or `off` decides, as before. `!pattern` re-includes a path, except under a folder that is itself excluded.
+  </Step>
+</Steps>
+
+To see which line excludes a path:
+
+```bash
+probe ignore check data/rows.jsonl
+```
+
+## Files above where the agent started
+
+A `.probe.config` in the folder the agent started in, or below it, always applies. One **above** that folder is yours to follow or set aside for each session: the agent asks you once, the first time Probe comes up, and follows the file until you answer.
+
+## What is enforced where
+
+| | |
+|---|---|
+| `probe` CLI | A write whose working directory or a path it names is excluded is refused. `probe exec` runs the command without opening a run. |
+| Python SDK | `probe.init()` in an excluded folder (or from an excluded script) opens no run and says so; code, output and read capture skip excluded paths; `log_artifact` on one records nothing. |
+| Coding agent | Told at session start which paths are excluded; may create or edit a `.probe.config` when you ask or when it judges a path should not be recorded, and tells you each change. |
+| Probe daemon | Never sees work done in, or naming, an excluded path. |
+
+<Warning>
+  A `.probe.config` that exists but cannot be read excludes everything under its folder. Older clients ignore the file entirely: update with `probe wizard --action update --yes`.
+</Warning>
+
+## Replacing folder defaults
+
+`probe session default --folder` and the `.probe/config.json` files it wrote are retired. An old one set to `off` or `read` still keeps its folder out of Probe. `probe doctor` lists them, and `probe doctor --fix` turns each into a `.probe.config`.
