@@ -82,12 +82,12 @@ A `.probe.config` in the folder the agent started in, or below it, always applie
 | `probe` CLI | A write whose working directory or a path it names is excluded is refused. `probe exec` runs the command without opening a run. |
 | Python SDK | `probe.init()` in an excluded folder (or from an excluded script) opens no run and says so; code, output and read capture skip excluded paths; `log_artifact` on one records nothing. |
 | Coding agent | Told at session start which paths are excluded; may create or edit a `.probe.config` when you ask or when it judges a path should not be recorded, and tells you each change. |
-| Probe daemon | Never sees work done in, or naming, an excluded path. |
+| Probe daemon | Never sees work done in, or naming, an excluded path (coming in the next release). |
 
 <Warning>
-  A `.probe.config` that exists but cannot be read excludes everything under its folder. Older clients ignore the file entirely: update with `probe wizard --action update --yes`.
+  A `.probe.config` that exists but cannot be read excludes everything under its folder. It needs CLI 0.227.0 and plugin 0.125.0 or later; older clients ignore the file entirely. Update with `probe wizard --action update --yes`.
 </Warning>
 
 ## Replacing folder defaults
 
-`probe session default --folder` and the `.probe/config.json` files it wrote are retired. An old one set to `off` or `read` still keeps its folder out of Probe. `probe doctor` lists them, and `probe doctor --fix` turns each into a `.probe.config`.
+`probe session default --folder` and the `.probe/config.json` files it wrote are retired. An old one set to `off` or `read` still keeps its folder out of Probe in coding-agent sessions, the only place it ever applied. `probe doctor` lists them, and `probe doctor --fix` turns each into a `.probe.config`.
