@@ -76,6 +76,7 @@
         "pages": [
           "agents/overview",
           "agents/skills",
+          "agents/probe-config",
           "agents/mcp",
           "agents/capture",
           "agents/statusline"
