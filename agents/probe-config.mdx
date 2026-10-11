@@ -1,19 +1,39 @@
 ---
 title: "Keep folders out of Probe"
 sidebarTitle: ".probe.config"
-description: "A gitignore-style .probe.config lists the paths Probe never records, from any session, wherever it started."
+description: "A gitignore-style .probe.config sets what Probe may read and record for each path, from any session, wherever it started."
 icon: "eye-slash"
 ---
 
-A `.probe.config` file lists paths Probe must never record. Put one in any folder: it covers that folder and everything below it, in the same syntax as a `.gitignore`. It works whichever folder your coding agent was started in.
+A `.probe.config` file sets how much Probe may touch the paths under its folder. Put one in any folder: it covers that folder and everything below it, in the same syntax as a `.gitignore`. It works whichever folder your coding agent was started in.
 
 ```text ~/code/client-x/.probe.config
-# nothing in this repo is recorded
+# nothing in this repo is read or recorded
 *
 ```
 
+## Levels
+
+Every line gives the paths it matches a level:
+
+| Level | Written as | What Probe does |
+| --- | --- | --- |
+| `off` | a plain line, or `<pattern> @probe off` | Never reads the path and records nothing about it. |
+| `read` | `<pattern> @probe read` | The Probe daemon may see your agent's work on it, as context. Nothing about it is recorded. |
+| `on` | `!pattern`, or `<pattern> @probe on` | Recorded as usual. |
+
+`@probe <level>` on a line of its own sets the level of every line after it, so written first it is the file's default:
+
+```text .probe.config
+@probe read
+notebooks/
+experiments/
+notebooks/private/ @probe off
+notebooks/README.md @probe on
+```
+
 <Note>
-  A `.probe.config` stops **recording**: no run is opened there, and no artifact, note or daemon record is made about those paths. Searching your team's history still works, and session transcripts are still uploaded.
+  `read` and `off` both stop **recording**: no run is opened there, and no artifact, note or daemon record is made about those paths. Only the daemon tells them apart: with `read` it still sees the work, so it understands the session; with `off` it never does. Your agent's own searches of your team's history still work, and session transcripts are still uploaded.
 </Note>
 
 ## Common setups
@@ -46,6 +66,13 @@ A `.probe.config` file lists paths Probe must never record. Put one in any folde
     *.ckpt
     ```
   </Tab>
+  <Tab title="Look, don't record">
+    The daemon may use the code as context, but records nothing about it:
+
+    ```text .probe.config
+    * @probe read
+    ```
+  </Tab>
   <Tab title="Machine-wide">
     `~/.probe.config` applies to everything under your home folder.
   </Tab>
@@ -57,15 +84,25 @@ A `.probe.config` file lists paths Probe must never record. Put one in any folde
   <Step title="Walk up from the path">
     Every `.probe.config` from the path up to `/` counts, including files above a repository's root. A folder without one inherits its parents' rules.
   </Step>
-  <Step title="A match wins">
-    If a rule excludes the path, nothing about it is recorded. `/probe on` cannot override it; edit the file instead.
+  <Step title="The last matching line wins">
+    A later line beats an earlier one, and a deeper file beats a shallower one. `/probe on` cannot override a level; edit the file instead.
+  </Step>
+  <Step title="An off folder is closed">
+    As in git, nothing inside a folder at `off` is looked at, its own `.probe.config` included, and no line turns anything inside it back on. To keep one file, close the contents instead of the folder:
+
+    ```text .probe.config
+    secret/*
+    secret/important.txt @probe on
+    ```
+
+    A folder at `read` or `on` stays open: what is inside takes the folder's level unless a line matches it directly.
   </Step>
   <Step title="No match: the session decides">
-    Otherwise the session's `/probe on`, `read` or `off` decides, as before. `!pattern` re-includes a path, except under a folder that is itself excluded.
+    Otherwise the session's `/probe on`, `read` or `off` decides, as before. A level only ever narrows what the session allows.
   </Step>
 </Steps>
 
-To see which line excludes a path:
+To see a path's level and the line that set it:
 
 ```bash
 probe ignore check data/rows.jsonl
@@ -79,13 +116,13 @@ A `.probe.config` in the folder the agent started in, or below it, always applie
 
 | | |
 |---|---|
-| `probe` CLI | A write whose working directory or a path it names is excluded is refused. `probe exec` runs the command without opening a run. |
-| Python SDK | `probe.init()` in an excluded folder (or from an excluded script) opens no run and says so; code, output and read capture skip excluded paths; `log_artifact` on one records nothing. |
-| Coding agent | Told at session start which paths are excluded; may create or edit a `.probe.config` when you ask or when it judges a path should not be recorded, and tells you each change. |
-| Probe daemon | Never sees work done in, or naming, an excluded path (CLI 0.228.0 or later). |
+| `probe` CLI | A write whose working directory or a path it names is `read` or `off` is refused. `probe exec` runs the command without opening a run. |
+| Python SDK | `probe.init()` in a `read` or `off` folder (or from such a script) opens no run and says so; code, output and read capture skip those paths; `log_artifact` on one records nothing. |
+| Coding agent | Told at session start which paths `.probe.config` blocks Probe from recording; may create or edit a `.probe.config` when you ask or when it judges a path should not be recorded, and tells you each change. |
+| Probe daemon | Never sees work done in, or naming, an `off` path, and its own commands never read one. Sees a `read` path's work tagged, and any write naming it is refused. |
 
 <Warning>
-  A `.probe.config` that exists but cannot be read excludes everything under its folder. It needs CLI 0.227.0 and plugin 0.125.0 or later; older clients ignore the file entirely. Update with `probe wizard --action update --yes`.
+  A `.probe.config` that exists but cannot be read excludes everything under its folder. `@probe` levels need CLI 0.231.0 and plugin 0.127.0 or later: older versions read `x @probe read` as a pattern that matches nothing, so they **record** a `read` path. Plain lines (`off`) work from CLI 0.227.0 and plugin 0.125.0. Update with `probe wizard --action update --yes`.
 </Warning>
 
 ## Replacing folder defaults
