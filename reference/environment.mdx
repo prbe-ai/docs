@@ -77,6 +77,19 @@ On rented or preemptible compute, set `PROBE_SPOOL_DIR` to durable storage. A no
 | `PROBE_DEVICE_ID_PATH` | Where the device identity is stored |
 | `PROBE_PLUGIN_ROOT` | Plugin installation root |
 | `PROBE_PI_PACKAGE_ROOT` / `PROBE_PI_SESSION_ROOTS` / `PROBE_PI_TAP_TOKEN` | pi-specific paths and credential |
+| `PROBE_KIMI_SESSIONS_DIR` / `PROBE_KIMI_TAP_TOKEN` | Kimi Code-specific path and credential |
+
+## Capy
+
+Capy runs in the cloud, so its variables live in two places: `PROBE_CAPY` on the Capy machine, the rest on the computer that captures your threads. See [Capy](/agents/capy).
+
+| Variable | Purpose |
+|---|---|
+| `PROBE_CAPY` | Set to `1` in Capy's environment variables. Marks the CLI's calls and telemetry as coming from Capy, and `probe doctor` there reports Capy's own checks. It does not label runs on the server |
+| `CAPY_API_KEY` | Your Capy API key, read by `probe capy connect`. `connect` stores it owner-only for the timer, and sends it to Capy's API only |
+| `PROBE_CAPY_THREADS_DIR` | Where the local copies of your Capy threads go. Default `~/.local/state/probe/capy/threads` |
+| `PROBE_CAPY_TAP_PLUGIN_DIR` | Capy's capture folder: the stored key, the capture credential and the sync record. Default `~/.local/state/probe/capy/probe-research-tap` |
+| `PROBE_CAPY_TAP_TOKEN` | A capture credential for Capy, from the environment. The timer cannot see it, so when the credential comes only from here, `connect` installs no timer |
 
 ## MCP
 

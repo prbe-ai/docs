@@ -8,6 +8,8 @@ Session capture streams your coding-agent sessions into the team knowledgebase, 
 
 It is the one feature that moves your own words off your machine, so this page is explicit about it.
 
+Claude Code, Codex, pi and Kimi Code sessions are captured live on this device by the capture plugin. Capy runs in the cloud, so its threads are captured another way: see [Capy threads](#capy-threads).
+
 ## What is sent
 
 <CardGroup cols={2}>
@@ -100,6 +102,40 @@ The response includes a `capture` block with the daemon's state and reason — s
 
 Worktrees are another case — a worktree misses the project-local settings that re-enable capture, and that re-enable is trust-gated per path.
 </Warning>
+
+## Capy threads
+
+Capy runs its agent on Capy's servers, so no transcript is ever written on your machine and no plugin captures it. Instead, `probe capy connect` on your own computer reads your threads through Capy's API, with your own Capy API key, and uploads each one as a session. Setup is on the [Capy](/agents/capy) page.
+
+<CardGroup cols={2}>
+  <Card title="Sent" icon="upload">
+    - Your prompts
+    - The agent's replies
+    - A one-line summary per tool call
+    - Attachment names
+  </Card>
+  <Card title="Not sent" icon="shield">
+    - Tool output
+    - File contents and diffs
+    - The model's reasoning
+  </Card>
+</CardGroup>
+
+- **Only threads you start**, in the Capy projects you choose. A Capy key can read your teammates' threads too, and capturing those would need their consent. Messages a teammate adds to one of your threads are part of it, and are captured.
+- **Every 10 minutes**, from a timer that `connect` installs: a systemd user timer on Linux, a launchd agent on macOS. Anywhere else it prints a crontab line for you to add. A computer that was off loses nothing: the next sync catches up. On Linux, user timers stop when you log out unless lingering is on (`loginctl enable-linger`), and `connect` tells you when it is off.
+- **One thread is one session.** Each subagent is a session of its own, linked to its thread. A thread is finished after a day with no new messages, or when you archive it. A new message reopens it.
+
+```bash
+probe capy status        # what is connected, and how the last sync went
+probe capy sync          # sync now
+probe capy disconnect    # remove the timer, the key, the sync record and the capture credential
+```
+
+Sessions already uploaded stay in Probe after `disconnect`.
+
+**Signing out or uninstalling Probe disconnects Capy too.** The timer, the key, the sync record and the capture credential all go, so nothing keeps uploading after you sign out.
+
+The killswitch works here as well: a `.disabled` file in Capy's capture folder stops every sync before it reads anything, until `probe capy connect` runs again. The wizard shows that state as `capture off (killswitch set)`.
 
 ## What happens to captured sessions
 

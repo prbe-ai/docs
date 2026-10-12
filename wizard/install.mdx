@@ -24,7 +24,7 @@ Four screens. The first is skipped on a machine with only one coding agent, and 
   </Step>
 
   <Step title="Coding agents" icon="robot">
-    Which agents to set up: **Claude Code**, **Codex**, **pi**, or several. Detected agents are pre-ticked; `Space` toggles, `Enter` continues.
+    Which agents to set up: **Claude Code**, **Codex**, **pi**, **Kimi Code**, or several. Detected agents are pre-ticked; `Space` toggles, `Enter` continues.
 
     This screen does not appear when the machine offers no choice.
 
@@ -41,7 +41,9 @@ Four screens. The first is skipped on a machine with only one coding agent, and 
         Skills for tracking runs, and read-only search over your lab's history.
       </Accordion>
       <Accordion title="Session capture">
-        Streams your Claude Code or Codex sessions to your team's knowledgebase. Sends **your prompts, the assistant's replies, and the shell commands you run** — not file contents and not tool output.
+        Streams your Claude Code, Codex, pi or Kimi Code sessions to your team's knowledgebase. Sends **your prompts, the assistant's replies, and the shell commands you run**, not file contents and not tool output.
+
+        Capy runs in the cloud, so its threads are captured with `probe capy connect` instead: see [Capy](/agents/capy).
 
         Credential-shaped values are replaced before upload, but that is a filter and not a guarantee, so keep live credentials out of your prompts. Captured sessions are visible to your whole team.
 

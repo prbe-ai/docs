@@ -79,7 +79,8 @@
           "agents/probe-config",
           "agents/mcp",
           "agents/capture",
-          "agents/statusline"
+          "agents/statusline",
+          "agents/capy"
         ]
       },
       {

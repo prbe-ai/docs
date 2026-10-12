@@ -83,6 +83,27 @@ Run `probe <group> --help` for the flags on any of these.
 | `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default --folder` |
 | `probe statusline` | `status` · `show` — Install adds it, Uninstall removes it |
 
+## Capy
+
+Capy runs its agent in the cloud, so its threads are captured from your own computer. The wizard's **Capy** entry runs the same commands. See [Capy](/agents/capy).
+
+| Command | Does |
+|---|---|
+| `probe capy connect` | Start capturing the Capy threads you start: takes your Capy key and projects, asks for one browser approval, and installs a timer that syncs every 10 minutes |
+| `probe capy sync` | Pull your new Capy messages and upload them now. `--quiet` prints only problems; the timer uses it |
+| `probe capy status` | What is connected, and how the last sync went |
+| `probe capy disconnect` | Remove the timer, the key, the sync record and the capture credential. `--keep-capture` keeps the credential |
+
+Flags for `probe capy connect`:
+
+| Flag | Effect |
+|---|---|
+| `--project <name or id>` | A Capy project to capture. Repeat it for more. Required when not at a terminal |
+| `--api-key-stdin` | Read the Capy key from stdin. Without it, the key comes from `$CAPY_API_KEY`, else a hidden prompt. Never pass the key as an argument: shell history keeps it |
+| `--no-timer` | Do not install the timer |
+| `--no-sync` | With `--no-timer`: do not sync right away |
+| `--no-browser` | Print the approval link instead of opening it |
+
 ## Imports
 
 <Note>
