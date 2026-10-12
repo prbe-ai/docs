@@ -11,7 +11,9 @@ Most ML work now happens in a conversation with an agent. The agent plugin makes
 npx probe-research install
 ```
 
-Supported hosts: **Claude Code**, **Codex**, **pi**.
+Supported hosts: **Claude Code**, **Codex**, **pi**, **Kimi Code**. All four run on your machine, and the install sets them up there. Kimi Code needs version 2.1.1 or later, and loads Probe at its next session start (or on `/reload` in an open session).
+
+**Capy** is a cloud agent: it runs on Capy's servers, so nothing installs on your machine. Probe goes in through Capy's own MCP settings, a skills bundle, and the `probe` CLI on the Capy machine. Its threads are captured from your own computer by `probe capy connect`. See [Capy](/agents/capy).
 
 ## Two plugins, two decisions
 
@@ -143,5 +145,8 @@ The install writes a managed Probe block into each selected agent's global instr
   </Card>
   <Card title="Status line" icon="bars" href="/agents/statusline">
     The tracked/untracked indicator in Claude Code.
+  </Card>
+  <Card title="Capy" icon="cloud" href="/agents/capy">
+    Probe inside a cloud agent, and capturing its threads.
   </Card>
 </CardGroup>

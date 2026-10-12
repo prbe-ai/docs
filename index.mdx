@@ -24,7 +24,7 @@ npx probe-research install
     The wizard opens your browser and you approve the device there. Nothing to paste.
   </Step>
   <Step title="Pick your coding agents" icon="robot">
-    Claude Code, Codex, pi — or several. Detected ones are pre-ticked.
+    Claude Code, Codex, pi, Kimi Code, or several. Detected ones are pre-ticked. Capy runs in the cloud, so it has its own [setup](/agents/capy).
   </Step>
   <Step title="Review and install" icon="clipboard-check">
     Exactly what will be set up, in plain terms, before anything happens.
@@ -44,7 +44,7 @@ Probe has three write surfaces. They are not alternatives to each other — most
 
 <CardGroup cols={3}>
   <Card title="Agent plugin" icon="robot" href="/agents/overview">
-    **From a coding agent.** Skills that teach Claude Code or Codex the workflow, plus a read-only MCP server so the agent can query lab history.
+    **From a coding agent.** Skills that teach Claude Code, Codex, pi or Kimi Code the workflow, plus a read-only MCP server so the agent can query lab history.
   </Card>
 
   <Card title="Python SDK" icon="python" href="/sdk/quickstart">
@@ -80,7 +80,7 @@ Everything lands in the same place: the [dashboard](/dashboard/overview) at [res
   </Accordion>
 
   <Accordion title="Coding-agent sessions" icon="message">
-    With capture on, your Claude Code and Codex sessions stream into the team knowledgebase: prompts, replies and the shell commands you ran. They become searchable evidence for why something was done.
+    With capture on, your Claude Code, Codex, pi and Kimi Code sessions stream into the team knowledgebase: prompts, replies and the shell commands you ran. Your Capy threads come in every 10 minutes once you run `probe capy connect`. They become searchable evidence for why something was done.
 
     See [session capture](/agents/capture).
   </Accordion>
