@@ -56,7 +56,7 @@ The arc it enforces:
 Its `reference.md` holds the capture-call and artifact command syntax, the publication sequence, and project admin.
 
 <Info>
-What counts as trackable is broader than training: evals, sweeps, literature reviews, architecture decisions, dataset processing — and the work that supports them, like provisioning for a training job or a config change before a launch. If you are unsure whether something deserves recording, it does.
+ML work is work on a model: training it, evaluating it, the data it learns from, or the research behind it. That covers evals, sweeps, prompt engineering checked against the model's outputs, datasets, literature reviews, design decisions and the analysis of results. Setup (installs, drivers, provisioning, and a training repo's CI fixes and dependency bumps) gets no run, only a short note when something trips you up. Product code that only calls a model, its CI and deploys, and work on Probe's own code are not recorded. A session that holds both records only the ML part, and anything you ask to record is recorded.
 </Info>
 
 ## `/instrument-code` — wire the SDK in
