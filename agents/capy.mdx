@@ -15,7 +15,7 @@ icon: "cloud"
 npx probe-research install --agent capy
 ```
 
-Or run `npx probe-research install` and tick **Capy**: it is listed when the Capy app is on your computer. After the review screen the installer asks for a Capy API key (Capy **Settings > API**; give it an expiry) and which Capy projects to capture, then connects capture and shows the steps below for Capy's own settings. Leave the key empty to skip capture for now; `probe capy setup` prints the steps again, ready to copy.
+Or run `npx probe-research install` and tick **Capy**: it is listed when the Capy app is on your computer. If you use Capy only in the browser, there is nothing on disk for the picker to find, so name it with `--agent capy`. After the review screen the installer asks for a Capy API key (Capy **Settings > API**; give it an expiry) and which Capy projects to capture, then connects capture and shows the steps below for Capy's own settings. Leave the key empty to skip capture for now; `probe capy setup` prints the steps again, ready to copy.
 
 Without a terminal, set `CAPY_API_KEY` and name the projects: `npx probe-research install --agent capy --yes --capture --capy-project "<name>"`. The run exits 1 if capture could not connect.
 
