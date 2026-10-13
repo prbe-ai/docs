@@ -18,7 +18,8 @@ probe wizard [AUTH_CODE] [OPTIONS]
 
 | Flag | Effect |
 |---|---|
-| `--agent <name>` | `claude`, `codex`, `pi`, `kimi`, or `both` (claude + codex). Default: choose interactively |
+| `--agent <name>` | `claude`, `codex`, `pi`, `kimi`, `capy`, or `both` (claude + codex). Default: choose interactively; an unattended run leaves out a Capy that is not already connected |
+| `--capy-project <name>` | Capy only: a Capy project to capture threads from (repeat for more). The key comes from `$CAPY_API_KEY`, else this machine's saved Capy connection |
 | `--tracking` / `--no-tracking` | Research tracking skills and the read-only MCP search surface |
 | `--capture` / `--no-capture` | Stream the selected agents' sessions to the knowledgebase |
 | `--auto-update` / `--no-auto-update` | Keep the CLI and plugins current in the background |
@@ -59,7 +60,6 @@ With `--action login`, these sign the device in and do **nothing else** — no p
 | `transcripts` | The session import lane directly |
 | `imports` | Existing imports |
 | `update` | Update the CLI and plugins |
-| `cloud-agents` | The Capy screen: setup steps for inside Capy, and capturing your Capy threads. Not at a terminal, it prints the steps and the capture status |
 | `diagnose` | The `probe doctor` report |
 | `manual` | Print every command the wizard would run |
 

@@ -42,8 +42,8 @@ Every screen has a scriptable equivalent. Prefer the wizard at a keyboard — it
 | Turn automatic updates on or off | **Settings** | `probe wizard --auto-update` / `--no-auto-update` |
 | Change what new sessions default to | **Defaults → Probe in new sessions** | `probe wizard --action defaults` |
 | Change who records (the agent or the Probe daemon) | **Defaults → Who records** | `probe wizard --who-records agent\|daemon --yes` |
-| Set Probe up inside Capy | **Capy → Set up Probe inside Capy** | `probe wizard --action cloud-agents` |
-| Capture your Capy threads | **Capy → Capture my Capy threads** | `probe capy connect` |
+| Set up Probe for Capy | **Install Probe** (tick Capy) | `npx probe-research install --agent capy` |
+| Print the steps for Capy's own settings | — | `probe capy setup` |
 | Sign in | Before the main menu opens | `probe wizard --action login` |
 | Sign in to a second account | — | `probe wizard --action login --context <name>` |
 | Switch to or remove another account on this device | `--action account` | `probe wizard --action account` |
@@ -65,7 +65,7 @@ On this device:
   Claude Code                  MCP on · capture on
   Codex                        MCP on · capture off
   Kimi Code                    MCP on · capture on
-  Capy                         capture on · 2 projects · last sync 4 min ago
+  Capy                         MCP in its settings · capture on · 2 projects · last sync 4 min ago
   CLI                          0.164.0 · up to date
   plugin                       0.66.0 · up to date
   tap                          0.41.0 · behind
@@ -83,7 +83,7 @@ Three parts of that are worth calling out:
 - **Last update attempt** is the only way to notice a detached auto-updater that has been failing silently.
 - **Import progress** is live. Background imports keep running while you use the menu, and you can leave the wizard without stopping them.
 
-A **Capy** row appears once you have connected Capy on this device: whether capture is on, how many Capy projects it covers, and when it last synced. It has no MCP column, because Capy's MCP server is set up in Capy's own settings.
+The **Capy** row reads its capture connection: whether capture is on, how many Capy projects it covers, and when it last synced. Its MCP is set up in Capy's own settings, which this machine cannot see.
 
 ## The main menu
 
@@ -110,16 +110,6 @@ A **Capy** row appears once you have connected Capy on this device: whether capt
     **Settings** — turn tracking, capture, rules or updates on or off; set defaults.
 
     See [Settings](/wizard/settings).
-  </Accordion>
-
-  <Accordion title="Cloud agents" icon="cloud">
-    **Capy**: set Probe up inside Capy, and capture the threads you start there. Capy runs in the cloud, so it is not part of **Install**.
-
-    - **Set up Probe inside Capy** shows the steps to copy: the MCP server, the skills, and the CLI on the Capy machine.
-    - **Capture my Capy threads** asks for a Capy API key and the Capy projects to capture, has you approve capture in your browser, and installs a timer that syncs every 10 minutes.
-    - Once connected, **Sync now** copies your new threads into Probe, **Reconnect** takes a new key, other projects or a fresh approval, and **Disconnect** stops capture. What was uploaded stays.
-
-    See [Capy](/agents/capy).
   </Accordion>
 
   <Accordion title="Help" icon="circle-question">
