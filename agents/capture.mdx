@@ -8,7 +8,7 @@ Session capture streams your coding-agent sessions into the team knowledgebase, 
 
 It is the one feature that moves your own words off your machine, so this page is explicit about it.
 
-Claude Code, Codex, pi and Kimi Code sessions are captured live on this device by the capture plugin. Capy runs in the cloud, so its threads are captured another way: see [Capy threads](#capy-threads).
+Claude Code, Codex, pi and Kimi Code sessions are captured live on this device by the capture plugin. Capy keeps no transcript on your computer, so its threads are captured another way: see [Capy threads](#capy-threads).
 
 ## What is sent
 
@@ -105,7 +105,7 @@ Worktrees are another case — a worktree misses the project-local settings that
 
 ## Capy threads
 
-Capy runs its agent on Capy's servers, so no transcript is ever written on your machine and no plugin captures it. Instead, `probe capy connect` on your own computer reads your threads through Capy's API, with your own Capy API key, and uploads each one as a session. Setup is on the [Capy](/agents/capy) page.
+Capy runs its agent loop on Capy's servers, so no transcript is written on your machine and no plugin captures it, even for a thread on This Mac. Instead, your computer reads your threads through Capy's API, with your own Capy API key, and uploads each one as a session. The installer connects it when you pick Capy (or run `probe capy connect`); setup is on the [Capy](/agents/capy) page.
 
 <CardGroup cols={2}>
   <Card title="Sent" icon="upload">

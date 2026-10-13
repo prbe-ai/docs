@@ -1,13 +1,23 @@
 ---
 title: "Capy"
-description: "Probe inside Capy, a cloud coding agent, and capturing the threads you start there."
+description: "Install Probe for Capy like any coding agent: capture the threads you start, and add Probe inside Capy."
 icon: "cloud"
 ---
 
-[Capy](https://capy.ai) runs its coding agent on its own servers and its tools on a Capy machine. Nothing installs on your computer, so Probe meets it in two places:
+[Capy](https://capy.ai) installs like any other coding agent, with one difference: its agent loop runs on Capy's servers, and its tools run either on your computer (a thread on **This Mac**) or on a Capy machine in the cloud. It runs no Probe hook and keeps no transcript on your computer, so Probe meets it in two places:
 
-- **Inside Capy**, the agent reads and records Probe work itself: the Probe MCP server for search, the `probe` CLI and SDK on the Capy machine for writes and instrumented runs, and a small skills bundle that says how.
-- **On your own computer**, `probe capy connect` copies the Capy threads you start into Probe as sessions, every 10 minutes.
+- **Inside Capy**, the agent reads and records Probe work itself: the Probe MCP server for search, the `probe` CLI and SDK for writes and instrumented runs (your computer's, for a thread on This Mac), and a small skills bundle that says how. Capy has no command for its own settings, so you add these once; the installer prints the steps.
+- **On your computer**, Probe copies the Capy threads you start into Probe as sessions, every 10 minutes, through Capy's API.
+
+## Install
+
+```bash
+npx probe-research install --agent capy
+```
+
+Or run `npx probe-research install` and tick **Capy**: it is listed when the Capy app is on your computer. After the review screen the installer asks for a Capy API key (Capy **Settings > API**; give it an expiry) and which Capy projects to capture, then connects capture and shows the steps below for Capy's own settings. Leave the key empty to skip capture for now; `probe capy setup` prints the steps again, ready to copy.
+
+Without a terminal, set `CAPY_API_KEY` and name the projects: `npx probe-research install --agent capy --yes --capture --capy-project "<name>"`. The run exits 1 if capture could not connect.
 
 <Note>
 Capy has no hooks and no status line, so there is no `/probe` switch, no Probe daemon and no Probe footer in Capy. `probe session` and `probe ask` do not work there: the agent checks prior work with the MCP `search` tool. Capy's API shares your prompts, the agent's replies and a one-line summary per tool call, never tool output, file diffs or the model's reasoning, so a Capy session in Probe is thinner than a Claude Code one.
@@ -15,11 +25,11 @@ Capy has no hooks and no status line, so there is no `/probe` switch, no Probe d
 
 ## Set Probe up inside Capy
 
-The wizard shows these steps too: `npx probe-research`, then **Capy → Set up Probe inside Capy**.
+The installer prints these steps at the end, and `probe capy setup` prints them again.
 
 <Steps>
   <Step title="Connect the Probe MCP server" icon="plug">
-    In Capy: **Settings > MCP servers > New MCP server**.
+    In Capy: **Settings > MCP & plugins**, add an MCP server (Streamable HTTP).
 
     - Key: `probe`. Availability: your project, or org-wide.
     - Transport: **HTTP**, URL `https://mcp.research.prbe.ai/mcp`.
@@ -40,7 +50,9 @@ The wizard shows these steps too: `npx probe-research`, then **Capy → Set up P
     Name the folder, not just the repository: the repository root also carries the Claude Code plugin's own copies. Or ask Capy: *"Install the skills in the capy/skills folder of prbe-ai/research-os-agent into my personal drive."*
   </Step>
 
-  <Step title="Put the CLI on the Capy machine" icon="terminal">
+  <Step title="Threads in Capy's cloud: put the CLI on the Capy machine" icon="terminal">
+    A thread on **This Mac** uses your computer's `probe`, which the installer set up; skip this step for it.
+
     In the project's **Environment variables > Personal** tab. Personal, so your token never reaches a teammate's thread or a PR review.
 
     | Name | Value |
@@ -82,7 +94,7 @@ Inside Capy, `probe doctor` reports only what applies there: the CLI version, wh
 
 This part runs on your own computer. You need:
 
-- The `probe` CLI, version 0.237.0 or later, installed for good: `uv tool install probe-research`. The timer runs that `probe`, so a throwaway `npx` copy cannot host it.
+- The `probe` CLI, version 0.245.0 or later, installed for good: `uv tool install probe-research` (the installer does this). The timer runs that `probe`, so a throwaway `npx` copy cannot host it.
 - A Capy API key, from Capy **Settings > API**. Give it an expiry.
 - To be signed in to Probe (`probe wizard --action login`) with the same email your Capy account uses.
 
@@ -92,9 +104,9 @@ Then:
 probe capy connect --project "<your Capy project name>"
 ```
 
-Or from the wizard: **Capy → Capture my Capy threads**.
+The installer runs the same steps when you pick Capy.
 
-It asks for the key with a hidden prompt, or reads `$CAPY_API_KEY`, or takes `--api-key-stdin`. Never type the key as an argument, where shell history keeps it. It then finds your Capy user by your Probe account's email, asks you to approve capture once in the browser (or checks that the approval it already has belongs to your team), and installs a timer that syncs every 10 minutes: systemd on Linux, launchd on macOS, and anywhere else it prints a crontab line to add. The first sync starts in the background, and a long history can take a while.
+It asks for the key with a hidden prompt, or reads `$CAPY_API_KEY`, or takes `--api-key-stdin`. Never type the key as an argument, where shell history keeps it. It then finds your Capy user by your Probe account's email, asks you to approve capture once in the browser (or checks that the approval it already has belongs to your team), and installs a timer that syncs every 10 minutes: systemd on Linux, launchd on macOS, and anywhere else it prints a crontab line to add and syncs once right away. The first sync starts in the background, and a long history can take a while.
 
 - **Only threads you start are captured**, in the projects you named. A Capy key can read your teammates' threads too, and capturing those would need their consent. Messages teammates add to **your** threads are part of them, and are captured.
 - **Captured:** your prompts, the agent's replies, attachment names and a one-line summary per tool call. **Not captured:** tool output, file contents, diffs, the model's reasoning. Likely credentials are replaced before upload, which is a filter, not a guarantee: keep live credentials out of prompts.
@@ -107,7 +119,7 @@ probe capy sync          # run one now
 probe capy disconnect    # remove the timer, the key, the sync record and the capture credential
 ```
 
-Sessions already uploaded stay in Probe after `disconnect`. Signing out of Probe or uninstalling it disconnects Capy too.
+Sessions already uploaded stay in Probe after `disconnect`. Signing out of Probe or uninstalling it disconnects Capy too; Probe's MCP server and skills stay in Capy until you remove them in its settings. Signing in to another account never moves Capy capture: if it was connected for another team, it turns off and `probe capy connect` connects it to the new one.
 
 The key is stored owner-only (`0600`) beside the capture credential, and is sent to Capy's API only. `probe capy` only reads from Capy; it never writes there.
 
