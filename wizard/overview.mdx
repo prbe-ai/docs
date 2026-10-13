@@ -43,7 +43,7 @@ Every screen has a scriptable equivalent. Prefer the wizard at a keyboard — it
 | Change what new sessions default to | **Defaults → Probe in new sessions** | `probe wizard --action defaults` |
 | Change who records (the agent or the Probe daemon) | **Defaults → Who records** | `probe wizard --who-records agent\|daemon --yes` |
 | Set up Probe for Capy | **Install Probe** (tick Capy) | `npx probe-research install --agent capy` |
-| Print the steps for Capy's own settings | — | `probe capy setup` |
+| Print the step for Capy's own settings | — | `probe capy setup` |
 | Sign in | Before the main menu opens | `probe wizard --action login` |
 | Sign in to a second account | — | `probe wizard --action login --context <name>` |
 | Switch to or remove another account on this device | `--action account` | `probe wizard --action account` |
@@ -83,7 +83,7 @@ Three parts of that are worth calling out:
 - **Last update attempt** is the only way to notice a detached auto-updater that has been failing silently.
 - **Import progress** is live. Background imports keep running while you use the menu, and you can leave the wizard without stopping them.
 
-The **Capy** row reads its capture connection: whether capture is on, how many Capy projects it covers, and when it last synced. Its MCP is set up in Capy's own settings, which this machine cannot see.
+The **Capy** row reads its capture connection: whether capture is on, how many Capy projects it covers, and when it last synced. Its MCP comes from the Probe plugin in Capy's own settings, which this machine cannot see.
 
 ## The main menu
 
