@@ -20,6 +20,7 @@ Every line gives the paths it matches a level:
 | --- | --- | --- |
 | `off` | a plain line, or `<pattern> @probe off` | Never reads the path and records nothing about it. |
 | `read` | `<pattern> @probe read` | The Probe daemon may see your agent's work on it, as context. Nothing about it is recorded. |
+| `hash` | `<pattern> @probe hash` | Runs over it are recorded, but each file only by its **identity**: path, SHA-256 (a fingerprint over 1 GiB), size and row count. Never its bytes, a preview, an upload or its text. The daemon treats it as `off`. |
 | `on` | `!pattern`, or `<pattern> @probe on` | Recorded as usual. |
 
 `@probe <level>` on a line of its own sets the level of every line after it, so written first it is the file's default:
@@ -35,6 +36,21 @@ notebooks/README.md @probe on
 <Note>
   `read` and `off` both stop **recording**: no run is opened there, and no artifact, note or daemon record is made about those paths. Only the daemon tells them apart: with `read` it still sees the work, so it understands the session; with `off` it never does. Your agent's own searches of your team's history still work, and session transcripts are still uploaded.
 </Note>
+
+### `hash`: lineage for data Probe must not read
+
+Use `hash` for data whose contents must stay on your machines but whose history you still want: patient records, customer data, anything licensed. Steps over it still become runs, and each file it reads or writes is recorded as a hash and a row count, so Probe can draw `raw.jsonl (30,000 rows) → clean.jsonl (29,156 rows) → train run` without ever seeing a record.
+
+```text data/.probe.config
+@probe hash
+*
+```
+
+- A step that is not a Python script (`head`, `jq`, `cat | shuf`) names its files so they are hashed too: `probe exec --input raw.jsonl --output clean.jsonl -- sh -c "..."`.
+- `probe exec` keeps no console log when its folder, or any path it names, is `hash`, `read` or `off`: the step may print records.
+- A file under 64 bytes is recorded with its path and size only, no hash. A hash reveals a file's contents only to someone who can already guess them exactly; for a short, predictable file that is easy, so Probe does not send one.
+- Uploads (`probe dataset add --upload`, `log_dataset(upload=True)`) of a `hash` path are refused. A checkpoint saved in a `hash` folder is recorded as a reference (path, hash, size, step), never uploaded.
+- One path has one level, so `read` and `hash` do not combine.
 
 ## Common setups
 
@@ -116,8 +132,8 @@ A `.probe.config` in the folder the agent started in, or below it, always applie
 
 |  |  |
 | --- | --- |
-| `probe` CLI | A write whose working directory or a path it names is `read` or `off` is refused. `probe exec` runs the command without opening a run. |
-| Python SDK | `probe.init()` in a `read` or `off` folder (or from such a script) opens no run and says so; code, output and read capture skip those paths; `log_artifact` on one records nothing. |
+| `probe` CLI | A write whose working directory or a path it names is `read` or `off` is refused. `probe exec` runs the command without opening a run. At `hash`, `probe exec` opens the run and records the files' identities, with no console log. |
+| Python SDK | `probe.init()` in a `read` or `off` folder (or from such a script) opens no run and says so; code, output and read capture skip those paths; `log_artifact` on one records nothing. At `hash`, the run opens and reads and writes are recorded by identity only; nothing about the file's contents is sent. |
 | Coding agent | Told at session start which paths `.probe.config` blocks Probe from recording; may create or edit a `.probe.config` when you ask or when it judges a path should not be recorded, and tells you each change. |
 | Probe daemon | Drops the agent's work done in an `off` folder, naming an `off` file, or searching a folder that holds one (`rg`, `grep -r`, `find`, `git diff`), and its own commands never read one. Sees a `read` path's work tagged; any write naming it is refused. |
 
@@ -126,7 +142,7 @@ A `.probe.config` in the folder the agent started in, or below it, always applie
 </Note>
 
 <Warning>
-  A `.probe.config` that exists but cannot be read excludes everything under its folder. `@probe` levels need CLI 0.231.0 and plugin 0.127.0 or later: older versions read `x @probe read` (and `x @probe off`) as a pattern that matches nothing, so they **record** those paths. Plain lines work from CLI 0.227.0 and plugin 0.125.0, so write `off` as a plain line. Update with `probe wizard --action update --yes`.
+  A `.probe.config` that exists but cannot be read excludes everything under its folder. `@probe` levels need CLI 0.231.0 and plugin 0.127.0 or later: older versions read `x @probe read` (and `x @probe off`) as a pattern that matches nothing, so they **record** those paths. Plain lines work from CLI 0.227.0 and plugin 0.125.0, so write `off` as a plain line. `@probe hash` needs CLI 0.253.0 or later: older versions read it as `off`, so they record nothing there (the safe direction). Update with `probe wizard --action update --yes`.
 </Warning>
 
 ## Replacing folder defaults
