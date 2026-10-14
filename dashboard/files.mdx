@@ -8,8 +8,8 @@ Three places files live, with one reader behind all of them.
 
 | Surface | Holds |
 |---|---|
-| **Files** | Files filed in the current workspace, under no project |
-| **Shared** | The team-owned folder — one per team, every member sees everything in it |
+| **Files** | Files filed in the current workspace, under no project (read-only) |
+| **Shared** | The team-owned folder — one per team, every member sees everything in it (read-only, except team datasets) |
 | An entity's **Files** tab | Artifacts anchored to that run, experiment or project |
 
 ## Folders load on demand
@@ -59,17 +59,14 @@ Desktop rows align **Name**, **Added** and **Size** in stable columns, with fold
 
 ## The Shared folder
 
-One per team, distinct from workspaces, and it never holds projects or experiments. Any member with write access may share any workspace file.
-
-Sharing **re-anchors** the artifact row rather than copying it: the file leaves its workspace and appears in Shared, keeping its id and its provenance.
+One per team, distinct from workspaces, and it never holds projects or experiments. It now holds the team's [datasets](/tracking/datasets). Its older loose files, and every workspace file, are **read-only**: list, open, download and delete still work; uploading, editing, and moving a file between a workspace and Shared are retired.
 
 ```bash
-probe shared share <artifact-id>
-probe shared unshare <artifact-id>      # back to the default workspace
 probe shared list
+probe shared download <artifact-id>
 ```
 
-A name collision in Shared is an error naming the existing file; replacing supersedes it atomically. Deletes here are soft and recoverable.
+Deletes here are soft and recoverable.
 
 Shared is also the level artifact **reuse** resolves against — when an agent asks whether an official version of something already exists, it is asking Shared.
 

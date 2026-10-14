@@ -38,7 +38,7 @@ Run `probe <group> --help` for the flags on any of these.
 | Command | Does |
 |---|---|
 | `probe run` | `start` · `fork` · `child` · `set` · `list` · `tag` · `end` · `check` · `reproduce` · `get` · `series` · `metrics` · `delete` |
-| `probe exec` | Run a command under a run, holding it with a heartbeat |
+| `probe exec` | Run a command under a run, holding it with a heartbeat. `--input` / `--output` name the files a non-Python step reads and writes, so they are hashed for lineage |
 | `probe get` | Print a run |
 | `probe bundle` | Print a run bundle: run, series and artifacts |
 | `probe events` | Backend lifecycle events for a run |
@@ -62,7 +62,11 @@ Run `probe <group> --help` for the flags on any of these.
 | Command | Does |
 |---|---|
 | `probe artifact` | `add` · `list` · `tree` · `move` · `download` · `versions` · `version-add` · `pin-impact` · `gc-uploads` · `delete` |
-| `probe shared` | `list` · `add` · `share` · `unshare` · `download` · `delete` |
+| `probe shared` | `list` · `download` · `delete` — the older team files are read-only; `add` · `share` · `unshare` are retired |
+| `probe dataset` | `add` · `use` · `list` · `show` · `download` — the team's [datasets](/tracking/datasets) |
+| `probe source` | `add` · `list` · `show` — where outside data came from |
+| `probe checkpoint` | `list` · `use` — every checkpoint, team-wide |
+| `probe provenance` | Where a dataset or checkpoint came from (`--down`: what used it; `--steps`: the methods section) |
 | `probe snapshot` | Non-disruptive code and environment capture |
 | `probe snapshot-show` | The captured code manifest, one file per line |
 | `probe snapshot-restore` | Rebuild the captured tree, or say exactly what is missing |

@@ -1,0 +1,106 @@
+---
+title: "Datasets, sources and checkpoints"
+sidebarTitle: "Datasets"
+description: "Record the data your models trained on, where it came from and every step it went through, and find every checkpoint your team saved."
+icon: "database"
+---
+
+Probe keeps a catalog of the team's data: **sources** (where outside data came from), **datasets** (named, versioned, made by runs) and **checkpoints** (every save every run made). Each one links to the runs that made and used it, so you can answer "what exactly did this model train on, and how was that data made?" months later.
+
+## Sources
+
+A source is where a chain of data starts: a Hugging Face dataset or model, a bucket prefix, a URL, a git repo.
+
+```bash
+probe source add https://huggingface.co/datasets/allenai/c4 --revision 1588ec4 --license ODC-BY
+probe source list
+```
+
+The same uri always gives the same source (`hf:datasets/allenai/c4@1588ec4`). A uri that carries a credential (a presigned signature, a token, a password) is refused before it leaves your machine. A source a run used cannot be deleted.
+
+## Datasets
+
+A dataset is a team-wide name with versions: `dataset:c4-clean@3`. Register what a run wrote:
+
+```python
+import probe
+
+run = probe.init(project="data-prep", name="dedup")
+ds = run.log_dataset("data/c4-clean/", "c4-clean",
+                     note="dropped 1,204 near-duplicates of the test set",
+                     stats={"rows": 98796, "removed": 1204},
+                     sources=[probe.source("https://huggingface.co/datasets/allenai/c4")])
+print(ds.ref)   # dataset:c4-clean@3
+```
+
+```bash
+probe dataset add data/c4-clean/ --name c4-clean --run dedup --note "dropped 1,204 near-duplicates"
+probe dataset list
+probe dataset show dataset:c4-clean
+```
+
+- **Bytes stay where they are by default.** A folder is identified by its manifest: each file's path, size and SHA-256 (hashed within the run's I/O budget; past it, a fingerprint). Probe stores the manifest, never the data.
+- **Same bytes, same version.** Registering identical bytes again adds no version; it records the run as a check on the existing one.
+- **Store it in Probe** with `--upload` / `upload=True`, file or folder. Unchanged files are never uploaded twice. Hosted data has its own quota: 50 GB on the free plan (datasets and checkpoints together), no limit on paid plans.
+- **A step done by hand:** `probe dataset add OUT --name N --from dataset:raw@1 --step "dedup by hand" --project P` records the step as a finished run.
+- **A mixture:** `log_dataset(..., composition={"dataset:a@2": 24000, "dataset:b@1": 10000})` (rows or shares) records what the new dataset is made of.
+- **Read-restricted projects:** registering from a run in one needs `--publish` / `publish=True`, because the catalog is team-wide.
+- A dataset any run used cannot be deleted.
+
+## What a run used
+
+Say what a run trained on, and with what role (`train`, `validation`, `test`, `eval`, `init`, `tokenizer`, `other`):
+
+```python
+run.use_dataset("dataset:c4-clean@3", role="train")
+run.use_mixture({"dataset:c4-clean@3": 0.7, "dataset:code@1": 0.3}, role="train")   # shares sum to 1
+run.use_checkpoint("checkpoint:sft-7b@best", role="init")
+```
+
+```bash
+probe dataset use dataset:c4-clean@3 --run sft-7b --role train
+probe checkpoint use checkpoint:sft-7b@best --run distill-1
+```
+
+`dataset:<name>` without a version means the version current at that moment, stored by its id: history never moves when `@4` lands. The Hugging Face integration records the base model (`init`) and Hub datasets for you.
+
+## Checkpoints
+
+Every checkpoint a run saved, team-wide, with what it was trained on and what it started from:
+
+```bash
+probe checkpoint list --project odyssey-1b
+probe checkpoint list --best
+```
+
+A checkpoint freezes the run's declared training inputs at the moment it was saved, so switching datasets later never rewrites what an old checkpoint learned from. After a rewind (`--rewind-to-step`), checkpoints from the discarded range are marked **rewound** and are never picked by `@latest` or `@best`.
+
+## Where it came from
+
+```bash
+probe provenance checkpoint:sft-7b@best           # upstream: datasets, sources, steps
+probe provenance source:hf:datasets/allenai/c4 --down   # everything that used it
+probe provenance checkpoint:sft-7b@best --steps   # the methods section
+```
+
+```text
+1  source  hf:datasets/allenai/c4@1588ec4  (ODC-BY)
+2  run     download-c4      -> dataset:c4-raw@1
+3  run     dedup-v2         -> dataset:c4-clean@3   "dropped 1,204 seqs >90% identical to test"
+4  run     sft-7b (train)   -> checkpoint step 4000 (best)
+```
+
+The walk also follows files nobody registered: a file one run wrote and another read is matched by its hash, so the chain exists without `log_dataset` anywhere. For data Probe must not read, use the [`hash` level](/agents/probe-config#hash-lineage-for-data-probe-must-not-read): the same chain, from hashes and row counts only.
+
+## Downloading
+
+```bash
+probe dataset download dataset:c4-clean@3 -o ./c4-clean
+probe artifact download --run sft-7b --checkpoint best -o ./ckpt
+```
+
+Data kept outside Probe is not downloaded; the command prints where it lives.
+
+<Note>
+  The catalog needs CLI 0.253.0 or later. Every SDK call warns once and carries on if the server or network says no: it never stops a training job.
+</Note>

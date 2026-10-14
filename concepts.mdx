@@ -8,7 +8,7 @@ Probe has a small vocabulary. Most confusion comes from two words that sound int
 
 ## The spine
 
-```
+```text
 workspace                 a shelf — where projects are filed
 └── project               a body of work, with a declared kind
     ├── experiment        one question, and the runs that answer it
@@ -78,13 +78,17 @@ A file, anchored somewhere. The anchor is what makes artifacts useful rather tha
 |---|---|
 | run | Checkpoints, outputs, logs, captured code |
 | experiment | Something that belongs to the question, not one execution |
-| project | Datasets, reference material, figures |
-| workspace | Files filed on the shelf, not under any project |
-| shared | The team's Shared folder — the lab-wide, promoted level |
+| project | Reference material, figures |
+| workspace | Older files filed on the shelf, under no project (read-only) |
+| shared | The team's Shared folder: the team's datasets (its older files are read-only) |
 
 Artifacts are content-addressed and deduplicated by SHA-256, and they **version**: appending the next version keeps the chain. Versions never supersede by name — two artifacts with the same name coexist and are ordered by creation.
 
 Bytes do not have to leave your infrastructure: an artifact can be a **reference** to an object you keep in your own bucket, with the pointer and checksum recorded in Probe.
+
+## Datasets, sources and checkpoints
+
+The team's data catalog. A **source** is where outside data came from (a Hub dataset, a bucket, a URL). A **dataset** is a team-wide name with versions (`dataset:c4-clean@3`), each made by a run and linked to what it came from. A run says what it **used**, with a role (`train`, `eval`, `init`, ...). Every **checkpoint** remembers what its run had trained on when it was saved. Together they answer "what did this model train on, and how was that data made?" See [Datasets](/tracking/datasets).
 
 ## Prose: three homes, deliberately
 
