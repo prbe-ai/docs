@@ -10,17 +10,19 @@ An artifact is a file with an **anchor**. The anchor is what makes artifacts use
 probe artifact add $RUN ./final.sif --kind artifact --step 4000
 probe artifact add ./dataset.parquet --project folding --notes "held-out val split, 12k rows"
 probe artifact add ./figure.png --experiment dockq
-probe artifact add ./notes.md --workspace engineering
-probe artifact add ./tokenizer.json --shared
 ```
 
 | Anchor | Flag | Use it for |
 |---|---|---|
 | run | *positional run id* | Checkpoints, outputs, logs, captured code |
 | experiment | `--experiment` | Something belonging to the question, not one execution |
-| project | `--project` | Datasets, reference material, figures |
-| workspace | `--workspace` | Files filed on the shelf, under no project |
-| shared | `--shared` | The team's lab-wide, promoted level |
+| project | `--project` | Reference material, figures |
+| workspace | `--workspace` | Read-only: older files, listed, downloaded and deleted, never added to |
+| shared | `--shared` | Read-only, except team datasets: see below |
+
+<Tip>
+  Data a run trained on, and data a pipeline produced, belongs in the team's [datasets](/tracking/datasets): named, versioned and linked to the runs that made and used it.
+</Tip>
 
 <Tip>
 `--notes` is worth writing every time. It is the field that answers "what is this file, what produced it, what does it show" — and it works on every anchor. A directory of `final_v3_actually_final.ckpt` is what happens without it.
@@ -98,18 +100,15 @@ probe artifact download <id> --out ./local.sif
 
 ## The team's Shared folder
 
-One per team, distinct from workspaces, and it never holds projects or experiments. Every member sees everything in it.
+One per team, distinct from workspaces, and it never holds projects or experiments. Every member sees everything in it. Since CLI 0.253.0 it holds the team's [datasets](/tracking/datasets); its older loose files, and every workspace file, are **read-only**:
 
 ```bash
 probe shared list
-probe shared add ./tokenizer.json              # straight into Shared
-probe shared share <artifact-id>               # move one of your workspace files in
-probe shared unshare <artifact-id>             # move it back to a workspace
 probe shared download <artifact-id>
 probe shared delete <artifact-id>              # soft delete, recoverable
 ```
 
-Sharing **re-anchors** the artifact row rather than copying it: the file leaves its workspace and appears in Shared, keeping its id and its provenance. Any member with write access may share any workspace file. A name collision in Shared is an error by default; `--replace` supersedes the prior shared file atomically.
+Adding a file, a new version or a move between a workspace and Shared (`probe shared add`, `share`, `unshare`, `artifact add --workspace|--shared`) is refused with a 410 that says where the file goes now: a team dataset (`probe dataset add`), or a project or run. Nothing already there was moved or deleted.
 
 Shared is also the level artifact **reuse** resolves against — when an agent asks "is there already an official tokenizer for this", it is asking Shared.
 

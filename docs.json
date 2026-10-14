@@ -44,6 +44,7 @@
           "tracking/runs",
           "tracking/metrics",
           "tracking/artifacts",
+          "tracking/datasets",
           "tracking/snapshots",
           "tracking/trajectories",
           "tracking/notes",
