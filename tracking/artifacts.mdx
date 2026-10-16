@@ -8,7 +8,7 @@ An artifact is a file with an **anchor**. The anchor is what makes artifacts use
 
 ```bash
 probe artifact add $RUN ./final.sif --kind artifact --step 4000
-probe artifact add ./dataset.parquet --project folding --notes "held-out val split, 12k rows"
+probe artifact add ./dataset.parquet --project folding
 probe artifact add ./figure.png --experiment dockq
 ```
 
@@ -25,7 +25,7 @@ probe artifact add ./figure.png --experiment dockq
 </Tip>
 
 <Tip>
-`--notes` is worth writing every time. It is the field that answers "what is this file, what produced it, what does it show" — and it works on every anchor. A directory of `final_v3_actually_final.ckpt` is what happens without it.
+Say what a file is — what produced it, what it shows — in the [notes](/tracking/notes) of the run or experiment it belongs to. Files carry no notes of their own.
 </Tip>
 
 ## Bytes, or a pointer to them
@@ -69,7 +69,7 @@ probe artifact add $RUN ./out/figures/loss.png --name figures/loss.png
 ```
 
 <Note>
-The file's extension is kept whatever you pass. Say what the file *is* with `--notes`, not by renaming it — a `.json` renamed to `.ckpt` is a file nothing can open.
+The file's extension is kept whatever you pass. Say what the file *is* in the run's notes, not by renaming it — a `.json` renamed to `.ckpt` is a file nothing can open.
 </Note>
 
 ## Versions
