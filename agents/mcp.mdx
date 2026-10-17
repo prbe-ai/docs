@@ -83,7 +83,7 @@ Document reads use a saved version when one exists, or pin the original text pre
 | experiment | `card` · `record` · `notes` · `summary` · `artifacts` · `lineage` · `groups` · `versions` · `reproduce` · `code` |
 | project | `card` · `record` · `artifacts` · `notes` · `summary` · `code` · `papers` |
 | artifact | `card` · `record` · `versions` |
-| group | `card` · `record` · `notes` |
+| group | `card` · `record` |
 | trial | `card` · `record` · `trajectory` |
 | session | `card` · `record` · `transcript` |
 | team note | `card` · `record` |
@@ -103,7 +103,7 @@ Use the path-list form for a literal dotted key.
 
 `notes` reads operational notes. `summary` reads the authored Overview Markdown with a bounded notes caveat alongside status and headline context. An excerpt reports `truncated: false` when complete, or `truncated: true` with a detail door.
 
-Artifact notes are read as `view="record", view_options={"field": "notes"}` — artifacts have no `notes` view.
+Artifacts and groups carry no notes; read what a file is from its run's or experiment's `notes`.
 
 ### Artifacts resolve by name
 

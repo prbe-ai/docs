@@ -46,7 +46,7 @@ probe notes push --run $RUN                # send it back, merging
 
 **Push merges.** A paragraph a teammate wrote while you were editing survives; it is not silently overwritten. `--force` replaces the server's document without merging, and `--steal` takes a checked-out file that has unpushed edits.
 
-Every entity can carry notes — `--project`, `--experiment`, `--run`, `--group`, `--artifact`.
+Notes live on a project, an experiment or a run — `--project`, `--experiment`, `--run` — plus the one team note (`--team`). Files and run groups carry none: describe them in the notes of the run or experiment they belong to.
 
 ### Sub-notes
 

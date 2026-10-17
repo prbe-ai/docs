@@ -121,7 +121,7 @@ A group collects peer runs: a sweep, an ensemble, the ranks of one distributed j
 GROUP=$(probe group create --name "lr sweep" --kind sweep --spec @search-space.json)
 probe run start --experiment dockq --group $GROUP --name lr-3e-4
 probe group list --experiment dockq
-probe group set $GROUP --notes "seed 3 diverged; excluded from the median"
+probe notes append --experiment dockq --text "lr sweep: seed 3 diverged; excluded from the median"
 ```
 
 ## Tags
