@@ -8,7 +8,7 @@ icon: "download"
 npx probe-research install
 ```
 
-Four screens. The first is skipped on a machine with only one coding agent, and the numbering adjusts so you are never told you are on step 2 of 4 when there are three.
+Four numbered screens. The first is skipped on a machine with only one coding agent, and the numbering adjusts so you are never told you are on step 2 of 4 when there are three. Between the last two, the wizard asks one question when your team has more than one workspace: where this computer's work should go.
 
 <Steps>
   <Step title="Sign in" icon="key">
@@ -24,7 +24,7 @@ Four screens. The first is skipped on a machine with only one coding agent, and 
   </Step>
 
   <Step title="Coding agents" icon="robot">
-    Which agents to set up: **Claude Code**, **Codex**, **pi**, **Kimi Code**, or several. Detected agents are pre-ticked; `Space` toggles, `Enter` continues.
+    Which agents to set up: **Claude Code**, **Codex**, **pi**, **Kimi Code**, **Capy**, or several. Detected agents are pre-ticked; `Space` toggles, `Enter` continues. Capy is listed when its app is on this computer; see [Capy](/agents/capy).
 
     This screen does not appear when the machine offers no choice.
 
@@ -47,7 +47,7 @@ Four screens. The first is skipped on a machine with only one coding agent, and 
 
         Credential-shaped values are replaced before upload, but that is a filter and not a guarantee, so keep live credentials out of your prompts. Captured sessions are visible to your whole team.
 
-        It is per-device, disclosed here and again at the browser approval, and [Settings](/wizard/settings) turns it off at any time.
+        It is per-device, disclosed here and again at the browser approval, and `probe wizard --no-capture --yes` turns it off at any time. See [Session capture](/agents/capture#turning-it-off).
       </Accordion>
       <Accordion title="Automatic updates">
         Keeps the CLI and plugins current in the background at session start.
@@ -64,6 +64,12 @@ Four screens. The first is skipped on a machine with only one coding agent, and 
     The marketplace is added, both plugins are installed for each selected agent, the capture credential is paired, and the managed rules block is written. Progress is per-stage, not a single indeterminate bar.
 
     Nothing here needs input. If an agent fails, the others still complete and the failure is named rather than rolled into a generic error.
+  </Step>
+
+  <Step title="Where should this computer's work go?" icon="folder-tree">
+    Every new project made on this computer, by your agent, the Probe daemon or an SDK run, is filed in one workspace. The wizard lists your team's workspaces, starting on the one this computer already uses, and offers **Create a new workspace**. Your pick is saved for this computer, the same setting `probe workspace use` writes.
+
+    A team with one workspace is not asked. An unattended install (`--yes`, or no terminal) never guesses between several: it keeps this computer's workspace, else your saved one, else leaves it unset and says how to pick. This step never blocks a finished install.
   </Step>
 
   <Step title="Import existing work" icon="box-archive">
@@ -88,7 +94,9 @@ To confirm the install independently:
 probe doctor
 ```
 
-In Claude Code, the install also added a status indicator under the input box. It renders `○ untracked`, `● folding`, or `● folding · running`, and keeps whatever status line you already had; Uninstall removes it and restores that.
+In Claude Code, the install also added a status indicator under the input box. It renders `● tracking → folding`, `● tracking → folding · running` or `● read-only`, and keeps whatever status line you already had; Uninstall removes it and restores that. See [Status line](/agents/statusline).
+
+Your agent records its own work, unless the other coding agents on this computer already record through [the Probe daemon](/agents/daemon): a newly set-up agent joins them. To switch, use **Who records** on the wizard's main menu.
 
 ## Doing it without the wizard
 

@@ -31,17 +31,18 @@ Every screen has a scriptable equivalent. Prefer the wizard at a keyboard — it
 | What you want to do | In the wizard | As a command |
 | --- | --- | --- |
 | Set Probe up on this device | **Install Probe** | `probe wizard --action configure --yes` |
-| Update the CLI and plugins | **Update to the latest version** | `probe wizard --action update` |
+| Update the CLI and plugins | **Update Probe** | `probe wizard --action update` |
 | Remove Probe from this device | **Uninstall Probe** | `probe wizard --action uninstall --yes` |
 | Import a folder of work | **Import research work** | `probe backfill <dir> --project <slug>` |
 | Import saved coding sessions | **Import research work** | `probe backfill --transcripts-only` |
 | Check on a running import | **Existing imports** | `probe wizard --action imports` |
-| Turn tracking (CLI + MCP) on or off | **Settings** | `probe wizard --tracking` / `--no-tracking` |
-| Turn session capture on or off | **Settings** | `probe wizard --capture` / `--no-capture` |
-| Turn the managed rules block on or off | **Settings** | `probe wizard --agent-rules` / `--no-agent-rules` |
+| Turn tracking (CLI + MCP) on or off | **Install** / **Uninstall** | `probe wizard --tracking` / `--no-tracking` |
+| Turn session capture on or off | **Install** / **Uninstall** | `probe wizard --capture` / `--no-capture` |
+| Turn the managed rules block on or off | **Install** / **Uninstall** | `probe wizard --agent-rules` / `--no-agent-rules` |
 | Turn automatic updates on or off | **Settings** | `probe wizard --auto-update` / `--no-auto-update` |
+| Turn research plan review or pasted-image upload on or off | **Settings** | — |
 | Change what new sessions default to | **Defaults → Probe in new sessions** | `probe wizard --action defaults` |
-| Change who records (the agent or the Probe daemon) | **Defaults → Who records** | `probe wizard --who-records agent\|daemon --yes` |
+| Change who records (the agent or [the Probe daemon](/agents/daemon)) | **Defaults → Who records** | `probe wizard --who-records agent\|daemon --yes` |
 | Set up Probe for Capy | **Install Probe** (tick Capy) | `npx probe-research install --agent capy` |
 | Print the step for Capy's own settings | — | `probe capy setup` |
 | Sign in | Before the main menu opens | `probe wizard --action login` |
@@ -87,45 +88,53 @@ The **Capy** row reads its capture connection: whether capture is on, how many C
 
 ## The main menu
 
+The menu shows every group but the one under the cursor collapsed to its heading.
+
 <AccordionGroup>
-  <Accordion title="Set up this device" icon="screwdriver-wrench">
-    **Install Probe** — set up research tracking, session capture and updates.
+  <Accordion title="Defaults" icon="toggle-on">
+    **Who records** — your agents, or [the Probe daemon](/agents/daemon). `←` / `→` switches it for every coding agent on this device. While the daemon records, Enter opens the daemon's own settings.
 
-    **Uninstall Probe** — stop capture and imports, clear history, remove plugins, sign out.
+    **Probe in new sessions** — on, read or off for new sessions.
 
-    **Update to the latest version** — upgrades the CLI and the plugins.
-
-    Install and Uninstall are the same decision in two directions, which is why they sit next to each other. See [Install](/wizard/install).
+    These lead the menu because their current values are worth seeing every time it opens. See [Settings](/wizard/settings#defaults).
   </Accordion>
 
-  <Accordion title="Your research" icon="box-archive">
-    **Import research work** — import saved coding sessions, a project folder, or both.
+  <Accordion title="Install/update/uninstall" icon="screwdriver-wrench">
+    **Install Probe** — set up tracking, capture and updates.
 
-    **Existing imports** — monitor background imports, see results, or resume interrupted work.
+    **Update Probe** — upgrade the CLI and the plugins.
+
+    **Uninstall Probe** — remove plugins, stop capture, sign out.
+
+    See [Install](/wizard/install).
+  </Accordion>
+
+  <Accordion title="Backfill" icon="box-archive">
+    **Import research work** — past sessions, a project folder, or both.
+
+    **Existing imports** — check, resume or cancel imports.
 
     See [Import research work](/wizard/import) and [Existing imports](/wizard/imports).
   </Accordion>
 
   <Accordion title="Settings" icon="sliders">
-    **Settings** — turn tracking, capture, rules or updates on or off; set defaults.
+    **Settings** — automatic updates, research plan review, and uploading the images you paste.
 
     See [Settings](/wizard/settings).
   </Accordion>
 
   <Accordion title="Help" icon="circle-question">
-    **Diagnose a problem** — what is installed, which credentials resolve, whether updates work.
+    **Diagnose a problem** — check setup, sign-in and updates.
 
     See [Diagnose and repair](/wizard/diagnose).
   </Accordion>
 
-  <Accordion title="Account" icon="user">
-    **Sign out** — stop capture and imports, clear import history, and sign out.
+  <Accordion title="Exit/sign out" icon="arrow-right-from-bracket">
+    **Exit** — leave the wizard. Imports keep running.
+
+    **Sign out** — stop capture and imports, then sign out. It asks first.
 
     Sign-in happens before the menu opens, so it is not a row here. Switching between accounts saved on this device is reachable with `--action account`. See [Accounts](/wizard/account).
-  </Accordion>
-
-  <Accordion title="Exit" icon="arrow-right-from-bracket">
-    **Exit** — leave the wizard. Imports continue in the background.
   </Accordion>
 </AccordionGroup>
 

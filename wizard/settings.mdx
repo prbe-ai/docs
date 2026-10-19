@@ -1,6 +1,6 @@
 ---
 title: "Settings"
-description: "Turn tracking, session capture, agent rules and updates on or off, and set what a new session does by default."
+description: "Automatic updates, research plan review and pasted images, and what a new session does by default."
 icon: "sliders"
 ---
 
@@ -9,69 +9,75 @@ npx probe-research            # → Settings
 probe wizard --action settings
 ```
 
-Five rows in two groups. `Space` toggles, `Enter` applies, `Esc` leaves without changing anything.
+Three rows in three groups. `Space` toggles a row, `→` on the **Set settings ›** band saves, and so does leaving with `←` or `Esc` after a change.
 
-The boxes read as the **union across this device's agents**: a row is ticked if this device does that thing at all. Applying a change leaves untouched rows exactly as they were.
+<Note>
+**Tracking, session capture and the rules block have no row here.** Probe is installed whole by **Install Probe** and removed whole by **Uninstall Probe**, because a row per part is how devices ended up with half of it. To change one part on its own, use the flags: `probe wizard --no-capture --yes`, or `--agent codex --no-capture` for one agent. See [Unattended use](/wizard/flags).
+</Note>
 
 ## What Probe does here
 
 <AccordionGroup>
-  <Accordion title="CLI + MCP" icon="terminal">
-    *Track runs in your coding agents; search lab history read-only.*
-
-    This is the tracking plugin: the skills that teach your agent the workflow, and the read-only MCP server it searches with. The box answers "is this installed here", which is what toggling it changes.
-
-    <Info>
-    A plugin that is installed but signed out is a different problem, and this row will not tell you about it. `probe doctor` owns that diagnosis.
-    </Info>
-  </Accordion>
-
-  <Accordion title="Session capture to the knowledgebase" icon="message">
-    *Sends this device's coding-agent sessions to your team's search.*
-
-    Off stops the upload immediately and unpairs this device's capture credential.
-
-    <Warning>
-    A capture credential can resolve from three places: the paired file, your environment, or the Probe config. Turning the row off clears the file — but if `PROBE_INGEST_TOKEN` is exported in your shell, capture can resume at the next session start. The wizard says so when it detects one, because it cannot unset a variable in your parent shell.
-    </Warning>
-  </Accordion>
-
-  <Accordion title="Rules in your global instructions" icon="file-pen">
-    *Prompts your coding agents to search and track research in Probe.*
-
-    A managed block in each selected agent's global instruction file. Everything outside the block is left alone. `probe agent-rules refresh` rewrites the block when it is older than the CLI.
-  </Accordion>
-
   <Accordion title="Automatic updates" icon="arrows-rotate">
-    *Upgrades the CLI and plugins in the background at session start.*
+    *Updates the CLI and plugins at session start.*
 
-    Off means you update deliberately, with `npx probe-research` and **Update to the latest version**. `probe doctor` still grades your versions either way.
+    Off means you update deliberately, with `npx probe-research` and **Update Probe**. `probe doctor` still grades your versions either way.
+  </Accordion>
+
+  <Accordion title="Research plan review" icon="clipboard-check">
+    *Your agent plans with you before writing research code.*
+
+    A line in the managed rules block that runs the [`/plan-research-review`](/agents/skills) skill before your agent writes code for ML research: it maps the plan to the code that already exists and asks you about every gap. On by default.
+  </Accordion>
+
+  <Accordion title="Upload images you paste" icon="image">
+    *Images you paste into a prompt upload with the session, unscanned.*
+
+    A screenshot that shows a credential is uploaded with it. On by default; untick it to keep pasted images on this device. See [Session capture](/agents/capture).
   </Accordion>
 </AccordionGroup>
 
 ## Defaults
 
+The two rows that set what happens in every session sit at the top of the **main menu**, under **Defaults**, so their current values show every time the wizard opens.
+
+### Who records
+
+**Your agents**, or **the Probe daemon**: who records your coding agents' work in Probe, and who searches the team's work for them. `←` / `→` on the row switches it for every coding agent on this device. See [The Probe daemon](/agents/daemon).
+
+```bash
+probe wizard --who-records daemon --yes
+probe wizard --who-records agent --yes
+```
+
+While the daemon records, Enter on the row opens its own page, with one setting: **Daemon sees the agent's reasoning**. Claude Code and Codex then write reasoning summaries for the daemon; they also show in your terminal and upload with the session. It applies to new sessions.
+
 ### Probe in new sessions
 
-This row cycles rather than toggles, because its three states are three different disclosures. It sets what [the switch](/agents/overview) starts at when a new coding-agent session opens.
+It sets what [the switch](/agents/overview#the-switch) starts at when a new coding-agent session opens. Its three states are three different disclosures:
 
 <Tabs>
   <Tab title="on">
-    Sessions will be tracked through your coding agent.
+    New sessions read and write Probe.
 
-    Reads and writes. The agent records work as it happens.
+    Reads and writes. The agent records work as it happens (or the Probe daemon does, where it records).
   </Tab>
   <Tab title="read">
-    Write commands are blocked. Searching your team's prior work still works, and so does reporting what it finds.
+    Write commands are blocked; search still works.
 
     The read surface stays live, so the agent keeps its memory of the lab — it just stops adding to it.
   </Tab>
   <Tab title="off">
-    No Probe calls at all — a new session will not search your team's prior work either, and cannot tell you what it missed.
+    No Probe calls at all, so no search either.
 
     This is the state to choose deliberately, not by accident. An agent with no reads does not know what it is not seeing.
   </Tab>
 </Tabs>
+
+```bash
+npx probe-research            # → Defaults → Probe in new sessions
+probe wizard --action defaults
+```
 
 A single conversation can always override the default with `/probe on`, `/probe read` or `/probe off`, or from a shell:
 
@@ -83,7 +89,7 @@ probe session status           # what this conversation is doing, and how that w
 
 ## From a script
 
-Every row is a flag, and omitting one preserves what is already configured:
+Every capability is a flag, and omitting one preserves what is already configured:
 
 ```bash
 probe wizard --no-capture --yes                    # capture off, everything else untouched

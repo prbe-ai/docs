@@ -41,6 +41,11 @@ Session capture
   Paired device            c06294bd3f584a8cbc1f74b74000b475
   Credential from          probe CLI config (ingest_token)
 
+Probe daemon
+  New sessions start       on
+  Daemon key               none — Who records in the wizard (switch it to the daemon, or Enter on it) approves one
+  Who records (Claude Code) the agent
+
 Agent rules
   Global CLAUDE.md         installed
 
@@ -82,6 +87,7 @@ Outbox
 
 | What you see | What it means |
 |---|---|
+| `CLI ... (UPDATE NEEDED: ...)` | This component is older than Probe recommends, and the line says what breaks. Today a CLI before 0.261.0 is marked: it cannot write project and experiment summaries, so your team's summaries stop updating. The wizard marks it too. Update with **Update Probe** |
 | Plugin installed, `Status` not ok | Installed but signed out, or the agent's own version predates a flag the plugin needs |
 | Capture `off (killswitch set)` | A killswitch file is present. Settings will not override it |
 | Versions empty / "could not check" | The cached manifest is unreadable — not good news, and not reported as such |
@@ -110,4 +116,4 @@ It stops capture and imports, clears local import history, removes the plugins a
 
 **Nothing already sent to your team's knowledgebase is touched.** Uninstalling a client does not delete data.
 
-To keep the plugins and only drop the credentials, use **Sign out** instead. To turn capture off and keep everything else, use [Settings](/wizard/settings) — `--uninstall` is the flag that makes a capture-off also remove the plugin, and it is off by default.
+To keep the plugins and only drop the credentials, use **Sign out** instead. To turn capture off and keep everything else, use `probe wizard --no-capture --yes`; `--uninstall` is the flag that makes a capture-off also remove the plugin, and it is off by default.

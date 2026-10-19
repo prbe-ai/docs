@@ -132,9 +132,11 @@ probe log $RUN auc=0.93 --step 4000 --derived --producer score_auc.py \
   --input eval/tpr --input eval/fpr --note "trapezoidal over the val sweep" \
   --code-ref scripts/score_auc.py@a1b2c3d
 
-probe metrics backfill $RUN --key train/loss_smoothed --from-file smoothed.jsonl
+probe metrics backfill $RUN --key train/loss_smoothed --producer smooth.py --from smoothed.jsonl
 probe metrics delete $RUN --key train/loss_smoothed
 ```
+
+`backfill` writes a whole derived curve in one request, from `--from FILE` (JSONL `{"step": 0, "value": 1.2}` objects or `[step, value]` pairs, a JSON array of either, or a JSON `{step: value}` object) or stdin; `--producer` is required, because a computed series without provenance is indistinguishable from a measured one. `delete` removes a derived series only: a logged series is the run's record, and the server refuses to delete it.
 
 Derived series carry a **derived** chip in the dashboard, with producer and computed-at on hover.
 
@@ -144,11 +146,11 @@ A view is a read-time formula over logged series. The stored object is the formu
 
 ```bash
 probe views preview $RUN --spec '{"expr":"train/loss - eval/loss"}'   # evaluate, save nothing
-probe views create  $RUN --spec-file gap.json
-probe views list    $RUN
-probe views data    $RUN gap
-probe views rename  $RUN gap generalization-gap
-probe views delete  $RUN gap
+probe views create  $RUN gap --spec-file gap.json                  # NAME is the panel title, unique per run
+probe views list    $RUN                                             # every view, with its id
+probe views data    $RUN <view-id>
+probe views rename  <view-id> generalization-gap
+probe views delete  <view-id>
 ```
 
 Views are **agent-authored by design**: the dashboard renders, renames and deletes one but never composes one. A panel card marks itself with an **ƒ** chip and shows its rendered formula as a subtitle, and its detail page carries the formula, its inputs, the raw spec, and who generated it.
@@ -159,7 +161,7 @@ Views are **agent-authored by design**: the dashboard renders, renames and delet
 probe metrics wide   $RUN                 # step x metric table (the DataFrame pivot)
 probe metrics grouped $RUN --key reward --by rank --agg mean --step-bucket 100
 probe metrics export $RUN                 # lossless raw points, one JSON object per line
-probe series latest  --experiment dockq   # cross-run last/min/max per series
+probe series latest  $RUN_A $RUN_B       # cross-run last/min/max per series
 probe coordinates    $RUN                 # every coordinate any fact landed on
 ```
 
@@ -179,4 +181,4 @@ Bare, it prints the board — every key with its last, min and max — which is 
 
 Anything the picture cannot show is printed to stderr first: a read the window cut short, a `--key` that matched nothing, a series dropped from an overlay, a non-finite point no scale can hold. On the canvas, `%` marks a cell more than one curve reached.
 
-Colour is off when stdout is not a TTY and whenever `NO_COLOR` is set; braille and box-drawing degrade to ASCII when the stream's encoding cannot carry them. Unlike its siblings, `plot` accepts a petname `short_id` as well as a UUID.
+Colour is off when stdout is not a TTY and whenever `NO_COLOR` is set; braille and box-drawing degrade to ASCII when the stream's encoding cannot carry them.

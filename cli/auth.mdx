@@ -72,6 +72,29 @@ npx probe-research            # signs in first, then the main menu
 You can skip signing in as a separate step. The first `client.run()` or `probe run start` with no token triggers the same browser approval inline on a TTY and persists the result. `PROBE_AUTO_LOGIN=0` disables that; headless and CI keep a clean `AuthError` and should set `PROBE_TOKEN`.
 </Tip>
 
+## Agent sign-in
+
+A coding agent can sign you up or in to Probe for you, with no form to fill in. It uses the auth.md agent registration protocol (`workos/auth.md` v0.6.0). Ask your agent to set up Probe, and it follows [useprobe.ai/auth.md](https://www.useprobe.ai/auth.md) (with [useprobe.ai/agents.md](https://www.useprobe.ai/agents.md)).
+
+<Steps>
+  <Step title="The agent registers">
+    It asks Probe for a registration with your email, and gives you a link and a 6-digit code.
+  </Step>
+  <Step title="You approve it in the browser">
+    Open the link, sign in with Google, and type the agent's code on `research.prbe.ai/authorize`. That is the only browser step.
+  </Step>
+  <Step title="The agent gets its token">
+    An access token that lasts one hour, which the agent can renew for 30 days. It can do what your `probe` key can: read, write and delete research, publish it, and use the assistant. Like every key, it cannot manage the team or mint API keys.
+  </Step>
+  <Step title="New to Probe">
+    If you have no team yet, the agent sets one up with you in the chat, then runs `npx probe-research install` to set up this device. You approve the device in the browser once.
+  </Step>
+</Steps>
+
+You are emailed when an agent is connected to your account. **Settings → AI agents** in the dashboard lists every agent you connected, and revokes one.
+
+The protocol itself, with every request and answer, is at [useprobe.ai/auth.md](https://www.useprobe.ai/auth.md).
+
 ## Switching accounts
 
 One machine can hold several accounts — a second team, a staging endpoint, a laptop handed on. Exactly one is active.
@@ -147,7 +170,7 @@ probe token revoke <token_prefix>
 |---|---|
 | `read` | Every read |
 | `write` | Creating and amending |
-| `delete` | Permanent deletes — projects, runs, artifacts, sub-notes |
+| `delete` | Deletes. A project (experiments included), run or run group goes to a trash that Probe support can restore for 21 days. Other deletes (files, sub-notes, papers, views) do not go to the trash |
 | `admin` | Never granted by `token create` |
 
 Omitting `--scope` requests read + write + delete. A token can never exceed the scopes your own role confers.
@@ -168,9 +191,10 @@ The MCP server is read-only and prefers a separately minted read-only token. The
 probe mcp status            # where the credential comes from, and whether it still works
 probe mcp headers           # the Authorization header as JSON
 probe mcp env               # the export line, for clients that only read the environment
+probe mcp token set         # store a read-only token by hand; re-run to rotate
 ```
 
-It falls back to `PROBE_TOKEN` for local development, and exposes no mutation tools either way.
+It never falls back to `PROBE_TOKEN` or your sign-in's write credential: with no read-only token, the MCP answers with an authentication error rather than reading with a key that can write. It exposes no mutation tools either way.
 
 ## Resolution order
 

@@ -3,3 +3,96 @@ title: "The outbox"
 description: "Writes queue locally and survive a crash. How to watch delivery, and what to do when it fails."
 icon: "inbox"
 ---
+
+A training loop must not wait on the network, so some writes do not go to the server straight away. They go into the **outbox**: a queue on your disk, delivered in order in the background.
+
+```bash
+probe outbox status        # exit 0 when everything is delivered, 2 otherwise
+probe flush                # deliver everything queued, and wait
+```
+
+## What queues
+
+| Write | Default |
+|---|---|
+| `probe log`, and the SDK's metric writes | **Queued** |
+| `probe span add` | **Queued** |
+| `probe artifact add` on a run | **Queued** |
+| `probe run end` | **Blocks** until this run's queued writes are delivered |
+| Everything else | Sent straight away |
+
+`PROBE_ASYNC=0` (or `--sync`) sends the queued kinds straight away instead. `--async` on `probe run end` skips its wait. See [Async by default](/cli/overview#async-by-default).
+
+<Warning>
+**A queued write is on your machine only.** Nobody else sees it, and the dashboard, the API and the MCP do not show it, until it is delivered. Before you say a run's numbers landed, check `probe outbox status` or close the run with `probe run end`.
+</Warning>
+
+## How delivery works
+
+The first queued write starts a background worker. It delivers the queue oldest first, one write at a time, then exits when the queue is empty. There is no service to install. A worker killed by a crash or a reboot starts again with the next `probe` command of any kind.
+
+Every write is its own file, written atomically, so a crash never leaves half a write. A file to upload is copied into the outbox when the disk has room for it; otherwise the outbox reads the original when it sends, so leave it in place until delivery.
+
+| The server answers | What the outbox does |
+|---|---|
+| Success, or "already recorded" | Delivered. A write that already landed is not recorded twice |
+| A network error, a 5xx, 408 or 429 | Stops in place and retries with backoff. Nothing is lost, and order is kept |
+| 401 or 403 | Holds the whole queue untouched, and tries again every five minutes. Sign in again and delivery resumes on its own. A refusal to write to one workspace is dead-lettered instead |
+| Any other refusal (a 4xx) | **Dead-letters** that write and carries on with the rest |
+
+A write that keeps failing with a temporary error is dead-lettered too, once it has failed for a day and at least 50 times, so one bad write cannot hold up everything behind it.
+
+Every `probe` command prints a one-line banner while anything is dead-lettered, such as `outbox: 5 dead-lettered — see probe outbox status`.
+
+## Commands
+
+| Command | Does |
+|---|---|
+| `probe outbox status` | What is queued and dead-lettered. `--verbose` lists every write, `--run` narrows to one run. Exit 0 when everything is delivered, 2 otherwise |
+| `probe outbox drain` | Deliver everything queued, in order, and wait. `--run` drains one run's writes; `--all` every outbox on this machine |
+| `probe flush` | The same as `probe outbox drain` |
+| `probe outbox watch` | Keep draining in the foreground (`--interval`, default 5 seconds; `--once`) |
+| `probe outbox retry [op_id]` | Put dead letters back in the queue and start delivery. `--run` and `--all` as above |
+| `probe outbox discard [op_id]` | Throw dead letters away (they move to `discarded/`, and their staged bytes are freed) |
+| `probe outbox discard --held` | Throw away queued writes that no credential on this machine will send, such as a signed-out account's. `--credential <fingerprint>` also covers another job's `PROBE_TOKEN` writes |
+| `probe outbox pause` / `resume` | Stop and restart background delivery. Writes still queue while paused |
+
+<Note>
+`probe outbox pause` is the outbox's own switch. It is not the session-capture killswitch, and it does not stop a coding agent's transcript from uploading.
+</Note>
+
+## When a write is dead-lettered
+
+```bash
+probe outbox status --verbose     # the refused writes, with the server's reason
+probe outbox retry                # once the cause is fixed: send them again
+probe outbox discard <op_id>      # or give one up
+```
+
+A dead letter is a decision for you: the server refused that write, and sending it again unchanged gets the same answer. Read the reason first. A common one is a write to a run, project or workspace that was deleted or that you cannot write to.
+
+## Where the queue lives
+
+The default is `~/.local/state/probe/outbox` (under `$XDG_STATE_HOME` when that is set). Each rank of a distributed job (torchrun, SLURM) queues in its own `rank-*` folder beneath it. Set another place with `PROBE_OUTBOX_DIR`, or `--spool-dir` before the command.
+
+If that folder cannot be written, the outbox falls back to a private folder under `$TMPDIR` and warns once. That folder does not survive a machine or pod restart.
+
+<Warning>
+**On rented, preemptible or Kubernetes compute, put the outbox on durable storage.** The default sits on the container's own disk, and writes still queued when the pod or node goes away go with it. Set `PROBE_OUTBOX_DIR` to a persistent volume, and give `finish()` time to deliver with `PROBE_FINISH_TIMEOUT_SEC` (and a pod termination grace period at least that long).
+</Warning>
+
+## When the disk is nearly full
+
+The outbox keeps free space on its disk: 5% of the volume, between 256 MiB and 2 GiB (`PROBE_OUTBOX_MIN_FREE_BYTES` overrides it). It also stops at 500,000 queued writes (`PROBE_OUTBOX_MAX_PENDING`). Past either limit, a new write is dropped and recorded as a capture gap, and training keeps running. The SDK reports how many writes it dropped when the run finishes.
+
+## Runs recorded offline
+
+A run started with `PROBE_MODE=offline` records with no network at all and is not delivered by the outbox's worker. Send it later with the current sign-in:
+
+```bash
+probe sync --list           # offline runs on this machine, and their state
+probe sync                  # deliver them
+probe sync /path/to/copy    # an offline run's folder copied off another machine
+```
+
+`probe sync` exits 0 when everything it found is delivered, 2 when something is not, and 1 when it found no offline run.

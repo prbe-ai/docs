@@ -16,7 +16,7 @@ icon: "gear"
 | `PROBE_TOKEN` | User token — the `/v1` surface |
 | `PROBE_MCP_TOKEN` | Read-only token the MCP server prefers |
 | `PROBE_INGEST_TOKEN` | Ingest token — the `/ingest` surface, and session capture |
-| `PROBE_SERVICE_TOKEN` | Service token for machine callers |
+| `PROBE_SERVICE_TOKEN` | Read-only service token (`probe_svc_...`) for machine callers |
 | `PROBE_HMAC_SECRET` | Optional body-signature secret for passive push |
 | `PROBE_AUTO_LOGIN` | `0` disables the inline browser approval on first use |
 | `PROBE_CONFIG` / `PROBE_CONFIG_PATH` | Override the config file location |
@@ -27,7 +27,7 @@ icon: "gear"
 | Variable | Purpose |
 |---|---|
 | `PROBE_PROJECT` | Default project for commands that take one |
-| `PROBE_WORKSPACE` | Default workspace |
+| `PROBE_WORKSPACE` | The workspace new projects go to (a slug or an id), overriding this computer's workspace (`probe workspace use`) |
 | `PROBE_RUN_ID` | The run a child process should join. Set by `probe exec` |
 | `PROBE_RUN_EPOCH` | Guards against joining a stale run. Set by `probe exec` |
 | `PROBE_PARENT_RUN` | Parent run for a child run |
@@ -37,12 +37,14 @@ icon: "gear"
 
 | Variable | Purpose |
 |---|---|
+| `PROBE_MODE` | What `probe.init()` does: `online` (default), `offline` (record with no network; deliver later with `probe sync`) or `disabled` (a run that records nothing) |
 | `PROBE_ASYNC` | `0` turns off queueing for `log`, `span add` and run-anchored `artifact add` |
 | `PROBE_ASYNC_UPLOADS` | Whether artifact bytes upload in the background |
-| `PROBE_SPOOL_DIR` / `PROBE_OUTBOX_DIR` | Where the durable write queue lives |
+| `PROBE_SPOOL_DIR` / `PROBE_OUTBOX_DIR` | Where the durable write queue lives. See [the outbox](/cli/outbox) |
 | `PROBE_OUTBOX_MAX_PENDING` | Cap on queued operations |
 | `PROBE_OUTBOX_MIN_FREE_BYTES` | Refuse to queue below this free-space floor |
 | `PROBE_OUTBOX_PRODUCER_ID` | Distinguishes producers sharing one queue |
+| `PROBE_OUTBOX_TRANSIENT_BUDGET_SEC` | How long a write that keeps failing with a temporary error is retried before it is dead-lettered. A day by default |
 | `PROBE_HEARTBEAT_SECONDS` | Run heartbeat interval. `<=0` disables |
 | `PROBE_FINISH_TIMEOUT_SEC` | How long `finish()` waits for the flush |
 

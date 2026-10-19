@@ -16,6 +16,12 @@ The npm package is a thin launcher: it resolves and runs the real CLI, so you do
   Four screens, and what each one asks.
 </Card>
 
+An interactive install also asks "Where should this computer's work go?": the workspace its new projects are filed in. An unattended install (`--yes` or explicit flags) never guesses between several workspaces; it keeps the one already set (or your old saved default), and otherwise leaves it unset and says how to pick one. Change it later with `probe workspace use <slug>`. See [each computer's workspace](/dashboard/workspaces#each-computers-workspace).
+
+<Tip>
+  A coding agent can sign you up or in itself, with no browser form: it follows [useprobe.ai/auth.md](https://www.useprobe.ai/auth.md), and you sign in with Google and type the 6-digit code the agent shows you. See [agent sign-in](/cli/auth#agent-sign-in).
+</Tip>
+
 ## Setting up a device
 
 <Tabs>

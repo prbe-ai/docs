@@ -39,7 +39,9 @@ notebooks/README.md @probe on
 
 ### `hash`: lineage for data Probe must not read
 
-Use `hash` for data whose contents must stay on your machines but whose history you still want: patient records, customer data, anything licensed. Steps over it still become runs, and each file it reads or writes is recorded as a hash and a row count, so Probe can draw `raw.jsonl (30,000 rows) → clean.jsonl (29,156 rows) → train run` without ever seeing a record.
+Use `hash` for data whose contents must stay on your machines but whose history you still want: patient records, customer data, anything licensed. Steps over it still become runs, and each file a step reads or writes is recorded as a hash and a row count, so the record shows that one step read `raw.jsonl` (30,000 rows) and wrote `clean.jsonl` (29,156 rows) without Probe ever seeing a record (`probe run inputs` lists a run's reads).
+
+Probe does not link runs by matching those hashes. A run's link to the dataset or checkpoint it used comes from a use that your agent or the SDK records, naming a fixed version (`probe dataset use dataset:<name>@<N> --run <run>`, or `run.use_dataset` in the SDK).
 
 ```text data/.probe.config
 @probe hash

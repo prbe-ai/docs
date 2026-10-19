@@ -42,7 +42,7 @@ probe wandb import-hosted my-team my-wandb-project --project folding --run abc12
 ## One run's history into an existing Probe run
 
 ```bash
-probe import wandb --wandb-run abc123 --run $RUN
+probe import wandb my-team/my-wandb-project/abc123 --run $RUN
 ```
 
 Mirrors one W&amp;B run's metric history into a Probe run you already have — for when the Probe run was opened by your own tooling and the curve lives at W&amp;B.
@@ -55,6 +55,14 @@ On the **Integrations** page, a W&amp;B connection gets its own **named team wor
 **Live sync has a cutoff.** It covers runs created after you activated it. A run that already existed is history — use backfill for it.
 
 This matters when testing: attaching to a run that has already finished tests backfill, not live sync. Watch the connection's last-sync time rather than inferring from whether rows appeared.
+</Warning>
+
+## Removing a connection
+
+A W&amp;B connection, connected or disconnected, has one **Delete** flow on the **Integrations** page. It shows what it will remove once, asks you to confirm, and then removes the key, the source attachments, the sync history and the data it imported, together, in the background, with progress you can follow.
+
+<Warning>
+**Detaching a W&amp;B source deletes what it imported.** The runs it brought into Probe, and any work attached to them, are deleted permanently; runs created in Probe and the W&amp;B project itself are not touched. To keep the imported runs, leave the source attached and pause its sync.
 </Warning>
 
 ## Source-backed runs

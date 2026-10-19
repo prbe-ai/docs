@@ -11,46 +11,64 @@ Everything the CLI, SDK and agent plugin record lands here. Nothing in the dashb
 
 ## The surfaces
 
+The sidebar holds **Assistant**, **Projects**, **Data** and **Notes**. **Team**, **Workspaces**, **Settings**, **Integrations** and **Install** sit in the account menu.
+
 <CardGroup cols={2}>
   <Card title="Projects" icon="folder-tree" href="/dashboard/projects">
-    The directory of work, laid out by project kind, with digests of what changed recently.
+    The workspace canvas, and each project's page: metrics, experiments, runs, papers and its summary.
   </Card>
   <Card title="Experiments and runs" icon="flask" href="/dashboard/experiments-runs">
-    Run detail, comparison, lineage, trajectories, steps and trials.
+    Experiment comparisons, run detail, lineage, spans, trials and logs.
   </Card>
   <Card title="Charts" icon="chart-line" href="/dashboard/charts">
     Curves, stat tiles, expression panels, zoom, and the captured rows behind them.
   </Card>
-  <Card title="Files" icon="folder" href="/dashboard/files">
-    Workspace files, the Shared folder, and per-entity artifact explorers.
+  <Card title="Data" icon="database" href="/dashboard/data">
+    Datasets, checkpoints and sources, where each came from, and the files on every entity.
   </Card>
-  <Card title="Search" icon="magnifying-glass" href="/dashboard/search">
-    Filters and meaning over the whole record.
+  <Card title="Search and Ask" icon="magnifying-glass" href="/dashboard/search">
+    Find work by name, or ask about it in plain words.
   </Card>
   <Card title="Assistant" icon="sparkles" href="/dashboard/assistant">
-    Ask questions of your lab's history, and approve any write before it lands.
+    Ask questions of your lab's history, and review the changes it proposes.
   </Card>
   <Card title="Workspaces and team" icon="users" href="/dashboard/workspaces">
-    Shelves, write permissions, members, devices and settings.
+    Shelves, write permissions, members, devices, AI agents and settings.
   </Card>
   <Card title="Integrations" icon="right-left" href="/integrations/overview">
     GitHub, Weights &amp; Biases and Benchling.
   </Card>
 </CardGroup>
 
+**Notes** gathers the team note and every project, experiment and run note in one place. See [notes](/tracking/notes).
+
+## The workspace canvas
+
+**Projects** opens on the workspace canvas: one board with every project in the workspace, its experiments and runs inside it, and the recorded links between them drawn as arrows. Choose **All workspaces** in the workspace menu for one combined board.
+
+- **Move around.** Drag to pan, scroll or pinch to zoom, and use **−**, **+** and **Fit** at the bottom right. **Cmd**/**Ctrl**+drag rearranges projects and experiments; hold **Alt**/**Option** to skip snapping. Positions and the camera are saved in your browser, per workspace.
+- **Zoom changes the drawing.** From 45% up, project frames show their experiments and runs, plus a collapsed **Research papers** list where the project has papers. Between 20% and 45%, projects become titles grouped by meaning on coloured backgrounds; click a group to filter the board to it. At 20% and below, each group becomes one label with its project and run counts.
+- **Filter by time.** **Live**, **24h**, **7d**, **30d** or **All** (the default), at the bottom left.
+- **Read a link.** Hover an arrow for its **Link** popup: the stored reason, when its writer gave one, and one word for where the link came from — **Fork**, **Agent**, **SDK**, **Person**, **Backfill** or **Session**. Click the arrow to pin it.
+- **Open anything.** Click a project, experiment or run to open its page. Hover a project or run for a preview.
+
+The Search / Ask bar stays open at the bottom of the canvas, and **Cmd**/**Ctrl**+**K** focuses it. A search highlights its matches on the board and keeps your zoom. The **Workspace details** pane beside the board holds the workspace overview and a project directory, newest first.
+
+The canvas is on for everyone. To go back to the Projects list, turn off **Workspace canvas** in **Settings** → **Preferences**. With the canvas on, a project's own page also has an **Overview** / **Canvas** toggle: the canvas shows its experiments and runs, or its papers on a `research` project.
+
 ## Things worth knowing up front
 
 <AccordionGroup>
   <Accordion title="The workspace switcher scopes almost everything" icon="layer-group">
-    Projects, Files and search results are all filtered by the workspace you are in. **Choose All workspaces for cross-workspace discovery** — a project you cannot find is usually a project filed somewhere else.
+    Projects, the canvas and Search are all filtered by the workspace you are in. **Choose All workspaces for cross-workspace discovery** — a project you cannot find is usually a project filed somewhere else.
 
     Your selection persists. A missing selection falls back to the oldest workspace.
   </Accordion>
 
-  <Accordion title="AI summaries are generated, and dated" icon="wand-magic-sparkles">
-    Entity pages lead with a generated summary, below which sits the **authored Overview** — the document a person or agent wrote. The two are visually distinct so a generated paragraph is never mistaken for a teammate's claim.
+  <Accordion title="Summaries are written by the recorders" icon="wand-magic-sparkles">
+    A project's or experiment's **Summary** is written by the recorders — the [Probe daemon](/agents/daemon)'s writer, or an agent working inline — as work happens. There is no regenerate button, and nothing is queued: an entity nobody has written up yet says "No summary yet." The page history labels each write by who made it and from where (`via daemon`, `via cli`).
 
-    Summaries refresh on a queue rather than on every read; a stale one is marked, not silently served as current.
+    See [summaries](/tracking/summaries).
   </Accordion>
 
   <Accordion title="Computed is never shown as captured" icon="calculator">
@@ -70,4 +88,4 @@ Everything the CLI, SDK and agent plugin record lands here. Nothing in the dashb
 
 ## Getting set up
 
-The **Install** page carries the one command you need and nothing else — everything that used to live in collapsed "if something is not working" sections now lives in [the wizard](/wizard/overview), which can act on the state instead of describing it.
+**Install**, in the account menu, carries the one command you need and nothing else — everything that used to live in collapsed "if something is not working" sections now lives in [the wizard](/wizard/overview), which can act on the state instead of describing it.

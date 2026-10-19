@@ -9,7 +9,7 @@ A literature review is research work, and it leaves as little behind as a traini
 Record **during** a review and again at its end — not afterwards from memory.
 
 ```bash
-probe paper add --project folding \
+probe paper add folding "LoRA: Low-Rank Adaptation of Large Language Models" \
   --source https://arxiv.org/abs/2106.09685 \
   --authors "Hu et al." \
   --summary @lora-summary.md \
@@ -17,17 +17,22 @@ probe paper add --project folding \
   --discrepancies @lora-vs-repo.md \
   --tag adapters --tag peft \
   --via <paper-id> --via-provenance provider_citation \
-  --via-reason "cited as the baseline this method improves on"
+  --via-reason "cited as the baseline this method improves on" \
+  --relates-to <paper-id> --relates-reason "LoRA freezes the base weights that this paper fine-tunes in full"
 ```
+
+The project and the paper's title come first. There is **no dedupe**: two adds of one URL make two rows, so check `probe paper list folding` first.
 
 | Field | What goes in it |
 |---|---|
+| *title* | The paper's title, positional. Required |
 | `--source` / `--url` | The paper URL or a local file path. Required |
 | `--authors` | Free text: `"Vaswani et al."` |
 | `--summary` | **The paper's main idea, in your words.** `@file.md` works |
 | `--repo` | The repository you read alongside it |
 | `--discrepancies` | What the repo does that the paper does not say |
 | `--tag` | Concept tags, repeatable |
+| `--relates-to` | The earlier paper in this project the new one connects to (its id), or `none` for the first paper. Needs `--relates-reason` |
 
 `--discrepancies` is the field that earns the entity. "The paper says warmup is linear; the repo's scheduler is cosine with a floor" is the kind of thing that costs a week when it is rediscovered, and nothing else in a review captures it.
 
@@ -40,38 +45,48 @@ probe paper add --project folding \
 --via-reason "one sentence on why that paper led to this one"
 ```
 
-That chain is readable back as a graph:
+Omit `--via` only when you genuinely cannot say. A review whose paths are recorded can be re-walked; one without them is a bag of citations. Never pass the paper you happened to add last: read order is not derivation.
+
+## How papers relate
+
+`--via` records how you *found* a paper. `--relates-to` records how its *content* connects to an earlier paper in the project, with `--relates-reason` saying how in one or two sentences. Choose it by what the papers say, never by which one you added last; pass `none` for the project's first paper. `--relates-provenance` says how the link is known: `inferred` (your judgment, the default), `human`, `observed_call` or `provider_citation`.
+
+Both are readable back:
 
 ```bash
-probe paper edges --project folding
+probe paper edges folding       # the discovered_via and relates_to links among its papers
 ```
 
-Omit `--via` only when you genuinely cannot say. A review whose paths are recorded can be re-walked; one without them is a bag of citations.
+Read it before adding a paper: the ids `--via` and `--relates-to` take are there. Whether one paper's bibliography cites another is a separate `cites` link that Probe reads from the bibliographies itself (`probe paper citations <paper-id>`, `probe paper graph --project folding`).
 
 ## Managing them
 
 ```bash
-probe paper list --project folding --tag adapters     # newest first
+probe paper list folding --tag adapters              # newest first
 probe paper update <id> --summary @revised.md
 probe paper tag <id> peft --remove adapters
 probe paper remove <id>
 ```
 
-`update` leaves omitted fields untouched. `""` clears a field — except `--title` and `--source`, which are required and reject an empty value.
+`update` leaves omitted fields untouched. `""` clears a field — except `--title` and `--source`, which are required and reject an empty value. `update --tag` replaces the whole tag list; `probe paper tag` adds or drops one.
 
 ## In the dashboard
 
-A project whose kind is `research` leads with **Papers**, right after Overview, and each row opens its own page at `/papers/{id}`.
-
-The page carries the captured **Summary** and **Repo vs paper** documents as full Markdown, and a **Paper** tab holding the provider-extracted abstract. Title, authors, publication year, venue and category chips are filled in from extraction where it succeeds; a pending extraction shows a spinner for about a minute and then goes quiet rather than pretending to still be working.
+In a `research` project, papers are listed in the Overview's left pane, with filtering, and selecting one opens its details there. A link to `/papers/{id}` opens the paper selected in its project. The separate Papers tab and the paper's own page are gone.
 
 <Note>
-The Papers tab is **read-only**. Recording a paper is an act by whoever did the reading — through the CLI or an agent session — exactly as attaching a subproject is. An empty tab names the capture path rather than offering a form.
+The dashboard shows papers; it does not record them. Recording a paper is an act by whoever did the reading — through the CLI or an agent session.
 </Note>
 
 ## Finding papers to record
 
-Agents have a `find_papers` tool over 40M+ abstracts, with `search`, `read` and `similar` modes.
+Agents have a `find_papers` tool over 40M+ abstracts (arXiv, PubMed, bioRxiv, medRxiv), with `search`, `read` and `similar` modes. The same search runs from the shell:
+
+```bash
+probe paper find "a low-rank adapter that matches full fine-tuning on GLUE with under 1% of the parameters"
+```
+
+It is read-only: it records nothing, and each call spends one of the team's weekly web calls.
 
 <Tip>
 `find_papers` wants **natural language**, not a keyword bag. A question-shaped description retrieves substantially more relevant papers than a bag of terms. Its `categories` filter is an AND, and its score rises as relevance falls — read the results, do not rank by the number.

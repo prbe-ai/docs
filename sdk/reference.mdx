@@ -10,7 +10,7 @@ The ambient surface. Every one of these resolves the run bound by `probe.init()`
 
 | Call | Does |
 |---|---|
-| `probe.init(**kw)` | Open or resolve a run and bind it. Returns a `Run` |
+| `probe.init(**kw)` | Open or resolve a run and bind it. Returns a `Run`. `workspace=` files a new project; see below |
 | `probe.log(metrics, **kw)` | Append metric points to the active run |
 | `probe.log_hw(metrics, **kw)` | Hardware metrics, on the `hardware` kind |
 | `probe.log_artifact(name, **kw)` | Record an artifact on the active run |
@@ -33,15 +33,16 @@ client = probe.Client(base_url=..., token=...)   # both default from config and 
 | `client.list_runs(...)` | Filter by experiment, group, project, tags |
 | `client.list_run_artifacts(run_id, kind=..., step_from=..., step_to=...)` | Artifacts on a run |
 | `client.list_run_artifact_tree(run_id, prefix=..., limit=...)` | One folder level |
-| `client.list_anchored(anchor, prefix=...)` | Artifacts at a non-run anchor |
-| `client.list_artifact_versions(name, ...)` | The version chain |
+| `client.list_anchored(anchor, anchor_id, prefix=...)` | Artifacts at a non-run anchor |
+| `client.list_artifact_versions(artifact_id)` | The version chain, newest first |
 | `client.presign_download_batch(...)` | Signed GETs for many artifacts |
 | `client.compare(experiment_id=..., keys=[...])` | N runs aligned on step |
 | `client.search(...)` | The one-index search door |
 | `client.browse(...)` | The structured project → experiment → run tree |
-| `client.events.add(run_id, kind, text, evidence_refs=[...])` | A structured research event |
+| `client.events.list(...)` / `client.events.for_run(run_id)` | The backend's lifecycle events log. Read-only |
 | `client.check_run(run_id)` | Capture-completeness report |
-| `client.promote(...)` | Promote an artifact to the shared level |
+| `client.fork_run(source, step=..., name=...)` | A new run continuing `source` from a checkpoint step; the source is untouched |
+| `client.download_checkpoint(checkpoint, dest)` | A stored checkpoint's files, each checked against its SHA-256 |
 | `client.ingest(...)` | Idempotent passive push — see [integrations](/sdk/integrations) |
 
 ## `Run`
@@ -53,11 +54,14 @@ client = probe.Client(base_url=..., token=...)   # both default from config and 
 | `run.unit(coords=, labels=)` | Context manager binding ambient coordinates and labels |
 | `run.span(span_type, name=, step_index=)` | Open a span; nests; closes with a terminal status |
 | `run.step(...)` | Record a step's non-numeric values |
-| `run.log_artifact(name, uri=, kind=, step=, ...)` | Record a file |
+| `run.log_artifact(name, path=, uri=, kind=, step_index=, ...)` | Record a file |
+| `run.promote_artifact(artifact_id, to=)` | Move one of this run's files up to its experiment or project (`to="experiment"` or `"project"`) |
+| `run.use_dataset(ref, role=)` / `run.use_mixture({ref: share})` / `run.use_checkpoint(ref, role=)` | Record what the run used. See [datasets](/tracking/datasets#what-a-run-used) |
+| `run.log_dataset(path_or_uri, name, ...)` | Register what the run wrote as the next version of a team dataset |
 | `run.snapshot(...)` | Code, environment and hardware capture |
 | `run.link(**foreign_keys)` | Merge into `metadata.foreign_keys` |
 | `run.execute(argv)` | Run a child process under this run |
-| `run.child(...)` / `run.fork(step=...)` | Sub-run / continuation |
+| `run.child(name=, relation=)` | A run descended from this one. `relation` is required: `fork`, `resume`, `retry` or `branch` |
 | `run.finish(status=...)` | Flush and close |
 
 ### `log` parameters
@@ -79,19 +83,31 @@ A key present in both `dimensions` and `labels` raises `ValueError`. See [metric
 
 | Client call | Endpoint |
 |---|---|
-| `client.run()` / `run.child()` | `POST /v1/experiments`, `POST /v1/experiments/{id}/runs` |
+| `client.run()` / `run.child()` | `POST /v1/projects` (a missing project or experiment), then `POST /v1/projects/{p}/experiments/{e}/runs`, or `POST /v1/projects/{p}/runs` for a project-direct run |
 | `run.log()` / `run.log_hw()` | `POST /v1/runs/{id}/metrics`, and `/steps` for non-numeric values |
 | `run.span()` / `run.step()` | `POST /v1/runs/{id}/spans` or `/steps` |
 | `run.log_artifact()` | `POST /v1/runs/{id}/artifacts` |
 | `run.snapshot()` | `POST /v1/execution-records`, then batched artifact uploads and confirms |
 | `run.link()` | `PATCH /v1/runs/{id}` (merges `metadata.foreign_keys`) |
 | `run.finish()` | `PATCH /v1/runs/{id}` |
-| `client.events.add()` | `POST /v1/runs/{id}/artifacts` with `kind=research_event` |
+| `client.events.for_run()` | `GET /v1/runs/{id}/events` |
 | `client.run_bundle()` / `run_lineage()` | `GET /v1/runs/{id}/bundle` or `/lineage` |
 | `client.ingest()` | `POST /ingest/v1/runs` |
 | `client.search()` | `POST /v1/search` |
 | `client.list_run_artifact_tree()` | `GET /v1/runs/{id}/artifacts/tree` |
 | `client.presign_download_batch()` | `POST /v1/artifacts/download/batch` |
+
+## Workspaces
+
+A new project is filed in this computer's workspace: `workspace=` on `probe.init` or `Client.run` (a slug or an id), else `PROBE_WORKSPACE`, else the one `probe workspace use` set. Existing projects need none of these.
+
+```python
+run = probe.init(project="folding", experiment="dockq",
+                 question="does temperature 0.7 beat 1.0 on DockQ?",
+                 workspace="protein-design")
+```
+
+On a team with several workspaces and none set, `probe.init` raises `WorkspaceRequired` **before anything is created**, so a training script fails at start rather than mid-run. Fix it once per computer with `probe workspace use <slug>`.
 
 ## Typed models
 
@@ -106,10 +122,15 @@ from probe.models import MetricPointIn, MetricBatch
 | Exception | Raised when |
 |---|---|
 | `AuthError` | No credential resolves, or the server rejects it |
+| `WorkspaceRequired` | A new project needs a workspace and none is set on a team with several. Raised before anything is created |
 | `CapabilityUnavailable` | The backend does not offer this capability — engine-off search, for example |
 | `RosError` | Base class for client errors |
 
-Data writes do not raise by default — they spool. Everything else does.
+Import the exceptions from `probe.errors`. Data writes do not raise by default — they spool. Everything else does.
+
+| Warning | Issued when |
+|---|---|
+| `ArtifactRedactedWarning` (`probe.sdk.secret_gate`) | `client.download_checkpoint` restored a file that an older client stored with a credential masked, so it differs from what was saved. Upload that checkpoint again |
 
 <Card title="Environment variables" icon="gear" href="/reference/environment">
   Every variable the SDK, CLI and MCP read, and what each overrides.

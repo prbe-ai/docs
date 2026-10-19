@@ -1,0 +1,102 @@
+---
+title: "Data"
+description: "The team's data catalog: datasets, checkpoints and sources, where each came from, and the files on every project, experiment and run."
+icon: "database"
+---
+
+**Data** in the sidebar is the team's data catalog. It lists every dataset and checkpoint your runs recorded, and each one links to the runs that made it and the runs that used it.
+
+```bash
+probe dataset list      # the same catalog, from a shell
+```
+
+<Note>
+Data replaced the old **Files** page. Workspace files and loose Shared files were retired on 2026-10-16, and `/files` and `/shared` now redirect here. The Shared folder stays the home of the team's datasets. Files recorded on a project, experiment or run are still on that entity's page — see [files on an entity](#files-on-a-project-experiment-or-run).
+</Note>
+
+## Storage
+
+The line beside the heading shows what is **Stored in Probe**, split into datasets and checkpoints, against your plan's limit. At the limit it reads **Uploads paused**.
+
+A dataset or checkpoint can also be **Kept outside Probe**: the catalog records where it lives and its identity, and the bytes stay in your own bucket or on your own machine.
+
+## Datasets
+
+The **Datasets** tab lists one row per dataset:
+
+| Column | Shows |
+|---|---|
+| **Name** | The dataset, its ref (`dataset:c4-clean@3`), and a mixture bar when its composition was recorded |
+| **Latest** | The newest version |
+| **Rows**, **Size** | For the latest version |
+| **Where it lives** | **Stored in Probe** or **Kept outside Probe**. *not verified by bytes* marks a version recorded by pointer only |
+| **Made by** | The run, and its project, that made the latest version |
+| **Used by** | How many runs used it |
+| **Updated** | When the latest version was recorded |
+
+Search matches datasets and the entities they link to. Filter by project, and by type: **Team datasets** are registered names with versions; **Run dataset files** are dataset files a run wrote without registering a name. Each row has a download action.
+
+### A dataset's page
+
+The header carries the ref, where the version lives, and **Download**. A registered dataset can be deleted from its options menu, and a dataset that runs still use is refused with the usage counts.
+
+| Tab | Holds |
+|---|---|
+| **Overview** | **Made from**: the mixture's composition, when one was recorded. **Lineage**: the graph of where this version came from |
+| **Used by** | The runs that used this version |
+
+The dataset explorer beside it has two tabs: **Files** (the version's files, with previews) and **Versions**.
+
+## Checkpoints
+
+The **Checkpoints** tab groups saved checkpoints under collapsible experiment and project headings. Hover or focus a heading for a preview of that entity.
+
+| Column | Shows |
+|---|---|
+| **Run** | The run that saved it |
+| **Step** | The step it was saved at |
+| **Best** | The checkpoint's score on the monitored metric named in the heading, or *rewound* when a rewind discarded that save |
+| **Size**, **Updated** | Size, and when it was saved |
+
+Filter by project, by **Best only**, and by where the checkpoint is stored.
+
+A checkpoint's page shows the metrics **At this step**, with a chart of the monitored metric that marks each saved step. **Trained on** lists the datasets the run had trained on when it saved, and **Started from** names the weights it began with. Its **Used by** tab lists the runs that used it.
+
+## Sources
+
+A source is where outside data came from: a Hugging Face dataset or model, a bucket prefix, a URL, a repo. A source's page has an **Overview** (URI, license, revision) and a **Used by** graph of everything downstream of it.
+
+## Provenance graphs
+
+A dataset's **Lineage** and a source's **Used by** are drawn as a small board, using the same cards and arrows as the [workspace canvas](/dashboard/overview#the-workspace-canvas):
+
+- Every card carries a type pill: **Run**, **Dataset**, **Checkpoint**, **Evaluation**, **Source**, **File** or **Artifact**.
+- Columns follow the longest path from the starting card, so arrows point right. An edge that closes a loop is still drawn, pointing back.
+- Drag to pan, and **Ctrl**/**Cmd**+scroll to zoom. A plain scroll keeps scrolling the page. **Fit** fits the whole graph.
+- Hover or focus a card to light its arrows.
+
+Below 1024px the graph becomes a list with the same pills. A graph that reaches items you cannot see says how many, and a cut-off history says so.
+
+## Data on a project, experiment or run
+
+When a project, experiment or run has recorded data, its page gets a **Data** tab. A toggle switches between **Uses** (the datasets it read, and its **Starting weights**) and **Used by** (who used what it made). An entity with no recorded data has no Data tab.
+
+```python
+run.use_dataset("dataset:c4-clean@3", role="train")   # what fills Uses
+```
+
+See [what a run used](/tracking/datasets#what-a-run-used).
+
+## Files on a project, experiment or run
+
+Files recorded on an entity are in the **Files** pane beside its Overview. The explorer starts collapsed: each folder level loads 50 entries at a time, with paging, when you open it. **Search files** matches paths on the server, including folders you have not opened.
+
+Clicking a file opens its page. Code and config render as read-only source. Markdown opens in **Preview**, with **Source** one action away. Images and other files show a preview where one is available, and every file offers download and its version history.
+
+```bash
+probe artifact tree $RUN --prefix figures/ --limit 50    # the same read
+```
+
+<Card title="Recording data" icon="database" href="/tracking/datasets">
+  Sources, datasets, what a run used, and checkpoints, from the SDK and CLI.
+</Card>

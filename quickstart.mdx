@@ -14,7 +14,7 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
         npx probe-research install
         ```
 
-        No prior install needed — `npx` fetches the launcher, which resolves the real CLI. The wizard signs you in through the browser, then walks four screens: pick your coding agents, review what will be set up, install, and offer to import work you already have.
+        No prior install needed — `npx` fetches the launcher, which resolves the real CLI. The wizard signs you in through the browser, then walks four screens: pick your coding agents, review what will be set up, install, and offer to import work you already have. Before the import offer it asks where this computer's work should go — the workspace its new projects are filed in.
 
         <Info>
           Add `--agent codex` to set up Codex instead of (or as well as) Claude Code. `--agent both` does both. Everything the menu offers is also a flag — see [unattended use](/wizard/flags).
@@ -27,7 +27,7 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
 
         Read-only. It prints what is installed, which credentials resolve, whether auto-update is working, and when the last update attempt was.
 
-        In Claude Code, the install also added a one-line indicator under the input box: `○ untracked`, `● folding`, or `● folding · running`.
+        In Claude Code, the install also added a one-line indicator under the input box, such as `● tracking`, `● tracking → folding` or `● tracking → folding · running`. See [Status line](/agents/statusline) for every state.
       </Step>
       <Step title="Use it">
         In your agent, the switch is `/probe`:
@@ -38,7 +38,7 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
         /probe off     no calls at all
         ```
 
-        With the switch on, the agent records work as it happens through the `/track-work` skill. It can also search your lab's history read-only at any time through the [MCP server](/agents/mcp).
+        With the switch on, your work is recorded as it happens — by the [Probe daemon](/agents/daemon) beside your agent, or by the agent itself through the `/track-work` skill, depending on the wizard's **Who records** setting. The agent can also search your lab's history read-only at any time through the [MCP server](/agents/mcp).
       </Step>
       <Step title="Bring your history with you">
         From the wizard's main menu, choose **Import research work** — or run it directly:
@@ -72,6 +72,13 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
 
         This opens a browser device flow and signs the device in — nothing else is installed. You approve the device in the dashboard; nothing is pasted. The credential is written to `~/.config/probe/config.json`.
 
+        Signing in this way does not ask which workspace this computer's work goes into. If your team has more than one workspace, pick one before the first run:
+
+        ```bash
+        probe workspace list
+        probe workspace use <slug>
+        ```
+
         <Tip>
           You can skip this step entirely. The first `probe.init()` or `probe run start` with no token triggers the same browser approval inline, as long as you are on a TTY. In CI, set `PROBE_TOKEN` instead — headless callers get a clean `AuthError` rather than a hung prompt.
         </Tip>
@@ -94,6 +101,8 @@ Start with the wizard. It is the shortest path in, and it is the only step that 
         ```
 
         `project` and `experiment` are created if they do not exist. `question` is the one opt-in to creating an experiment, so the first run in a new experiment says what you expect to see; every run after that is bare.
+
+        A new project goes into this computer's workspace. On a team with several workspaces and none set, `probe.init` raises `WorkspaceRequired` before creating anything: run `probe workspace use <slug>`, set `PROBE_WORKSPACE`, or pass `workspace=` to `probe.init`.
 
         If the script exits without `finish()`, the run is still closed at exit as `completed`, `failed` or `canceled` rather than left for the crash reaper.
       </Step>

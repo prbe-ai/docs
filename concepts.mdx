@@ -21,26 +21,28 @@ Every level can carry artifacts, notes, tags and lineage edges. Nothing above a 
 
 ## Workspace
 
-A place to file projects and files. Not an ownership boundary — **every member of the team reads every workspace**, and that is a product decision, not an omission. What a workspace can restrict is who may *edit* what is filed in it, through [access groups and writer lists](/dashboard/workspaces).
+A place to file projects. Not an ownership boundary — **every member of the team reads every workspace**, and that is a product decision, not an omission. What a workspace can restrict is who may *edit* what is filed in it, through [access groups and writer lists](/dashboard/workspaces).
 
 Teams use workspaces the way you would use folders: `engineering`, `wandb-imports`, one per external integration. Connecting Weights &amp; Biases or Benchling creates a dedicated workspace and asks you what to call it.
+
+Each computer files its new projects into one workspace, chosen in the setup wizard. On a team with several workspaces and none chosen, a new project is refused rather than guessed. See [each computer's workspace](/dashboard/workspaces#each-computers-workspace).
 
 ```bash
 probe workspace list
 probe workspace create engineering
-probe workspace use engineering      # scopes this context
+probe workspace use engineering      # this computer's new projects go here
 ```
 
 ## Project
 
 The top of the data model, and the unit a person thinks in. A project declares a **kind**, from a closed vocabulary, and the kind decides how its dashboard page is laid out:
 
-| Kind | What it means | Lead content tab |
+| Kind | What it means | Its page leads with |
 |---|---|---|
-| `training` | Work where model weights move | Experiments |
-| `inference` | Frozen-weight work — sweeps, ablations, evals | Experiments |
+| `training` | Work where model weights move | Metrics |
+| `evaluation` | Frozen-weight work — sweeps, ablations, evals. Formerly `inference` | Metrics |
 | `research` | Document-shaped investigation: lit reviews, design, theory | Papers |
-| `general` | Miscellaneous work — a real choice, not a fallback |  |
+| `general` | Miscellaneous work — a real choice, not a fallback | Metrics |
 
 Kind reaches the project page only. It never restructures an experiment or a run.
 
@@ -48,7 +50,7 @@ Projects nest: a phase of a bigger effort is a **subproject** (`probe project cr
 
 ## Experiment
 
-One question, and the runs that answer it. The `question` field is the point of the entity; if you cannot write one, you probably want a project-direct run instead.
+One question, and the runs that answer it. It is stored as a project of kind `experiment`, filed under its parent project. The `question` field is the point of the entity; if you cannot write one, you probably want a project-direct run instead.
 
 The question is **first-write-wins**: reopening an experiment never rewrites it. That is deliberate — an experiment whose question drifts to match its results has stopped being an experiment.
 
@@ -79,8 +81,9 @@ A file, anchored somewhere. The anchor is what makes artifacts useful rather tha
 | run | Checkpoints, outputs, logs, captured code |
 | experiment | Something that belongs to the question, not one execution |
 | project | Reference material, figures |
-| workspace | Older files filed on the shelf, under no project (read-only) |
-| shared | The team's Shared folder: the team's datasets (its older files are read-only) |
+| shared | The team's Shared folder, home of the team's datasets |
+
+Workspaces hold projects only. Files filed straight on a workspace were retired in October 2026.
 
 Artifacts are content-addressed and deduplicated by SHA-256, and they **version**: appending the next version keeps the chain. Versions never supersede by name — two artifacts with the same name coexist and are ordered by creation.
 
@@ -88,7 +91,7 @@ Bytes do not have to leave your infrastructure: an artifact can be a **reference
 
 ## Datasets, sources and checkpoints
 
-The team's data catalog. A **source** is where outside data came from (a Hub dataset, a bucket, a URL). A **dataset** is a team-wide name with versions (`dataset:c4-clean@3`), each made by a run and linked to what it came from. A run says what it **used**, with a role (`train`, `eval`, `init`, ...). Every **checkpoint** remembers what its run had trained on when it was saved. Together they answer "what did this model train on, and how was that data made?" See [Datasets](/tracking/datasets).
+The team's data catalog. A **source** is where outside data came from (a Hub dataset, a bucket, a URL). A **dataset** is a team-wide name with versions (`dataset:c4-clean@3`), each made by a run and linked to what it came from. A run says what it **used**, with a role (`train`, `eval`, `init`, ...). Every **checkpoint** remembers what its run had trained on when it was saved. Together they answer "what did this model train on, and how was that data made?" See [Datasets](/tracking/datasets), and browse them on [Data](/dashboard/data).
 
 ## Prose: three homes, deliberately
 
@@ -98,8 +101,8 @@ This is the distinction people get wrong most often.
   <Card title="description" icon="tag">
     The short identity line. One or two sentences. Shown everywhere the entity is listed.
   </Card>
-  <Card title="Overview" icon="file-lines">
-    `summary_markdown` — the durable, teammate-facing document, shown below the AI summary on the entity page. Whole-document, last-write-wins.
+  <Card title="Summary" icon="file-lines">
+    A project's or experiment's teammate-facing page, shown as **Summary** on the dashboard. The recorders write it as work happens: the Probe daemon's writer, or an agent working inline.
   </Card>
   <Card title="notes" icon="note-sticky">
     The operational briefing agents read and write. Supports append, titled sub-notes, and merge-on-push editing.
@@ -108,9 +111,16 @@ This is the distinction people get wrong most often.
 
 On top of those there is one **team note**: a single shared document injected into every agent session on every machine. It is working memory for the whole team, and it has a render budget — a note past it reaches nobody.
 
-<Card title="Notes in full" icon="pen" href="/tracking/notes">
-  Checkout/push editing, sub-notes, the team note, and the rules for writing one.
-</Card>
+Markdown a person puts on the summary page (the `document` field) is kept as written when a recorder rewrites the rest. Runs have no summary page.
+
+<CardGroup cols={2}>
+  <Card title="Summaries" icon="file-lines" href="/tracking/summaries">
+    Who writes them, and `probe summary checkout` / `push`.
+  </Card>
+  <Card title="Notes in full" icon="pen" href="/tracking/notes">
+    Checkout/push editing, sub-notes, the team note, and the rules for writing one.
+  </Card>
+</CardGroup>
 
 ## Session
 
@@ -144,5 +154,8 @@ For coding agents there is one more concept: the per-conversation switch.
 | `on` | yes | yes |
 | `read` | yes | no |
 | `off` | no | no |
+| `inline` | yes, by the agent itself | yes, by the agent itself |
+
+Where the [Probe daemon](/agents/daemon) records for an agent, `on` and `read` mean the daemon reads and records; `inline` stops the daemon and the agent reads and writes Probe itself.
 
 Only the researcher moves it. An agent invoking the skill loads guidance and never changes the state. See [the `/probe` skill](/agents/skills).

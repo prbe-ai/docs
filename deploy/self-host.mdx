@@ -30,7 +30,7 @@ Every step below is exercised nightly in CI against the same flow. This is the h
 ## What engine-off means
 
 - `/v1/search` returns `state: "partial"` with SQL-exact results only. The exact channel matches projects, experiments and artifacts — not run names.
-- AI summaries stay dormant and are badged STALE; they need an LLM gateway.
+- Project and experiment [summaries](/tracking/summaries) are written by whoever records the work, never by the server: a fresh install is set up that way. A coding agent that records itself keeps them with `probe summary push`. The Probe daemon needs the LLM gateway (`litellm`), which this topology turns off.
 - No dashboard ships. Clients are machines using service-minted bearer tokens, so **no SSO or OIDC integration is required** — those configuration keys can be placeholders.
 
 ## Install

@@ -19,9 +19,9 @@ Hosted: `https://mcp.research.prbe.ai/mcp`. It ships inside the tracking plugin,
 | Tool | Answers |
 |---|---|
 | `browse` | "What exists here?" — the structured project → experiment → run tree |
-| `search` | "Find things about X" — exact + semantic search with per-result provenance |
+| `search` | "Find things about X" — exact + semantic search with per-result provenance. `semantic=false` is keyword-only, with no model calls |
 | `entity` | "Show me this thing" — one entity through a purpose-shaped `view` |
-| `metrics` | "What are the numbers?" — one run's metrics at the grain you ask for |
+| `metrics` | "What are the numbers?" — one run's metrics at the grain you ask for, or several runs' curves side by side |
 | `query_sql` | "What exactly do the tables say?": read-only SQL over your lab's research tables. Called with no arguments, it lists the tables and columns you may read |
 | `find_papers` | "What does the literature report?" — 40M+ abstracts, and reading the papers |
 
@@ -79,13 +79,17 @@ Document reads use a saved version when one exists, or pin the original text pre
 
 | Kind | Views |
 |---|---|
-| run | `card` · `record` · `notes` · `summary` · `trajectory` · `trials` · `metrics` · `artifacts` · `reproduce` · `handoff` · `lineage` · `events` · `code` |
-| experiment | `card` · `record` · `notes` · `summary` · `artifacts` · `lineage` · `groups` · `versions` · `reproduce` · `code` |
-| project | `card` · `record` · `artifacts` · `notes` · `summary` · `code` · `papers` |
-| artifact | `card` · `record` · `versions` |
+| run | `card` · `record` · `notes` · `trajectory` · `trials` · `metrics` · `views` · `artifacts` · `reproduce` · `handoff` · `lineage` · `events` · `code` · `diff` · `sessions` |
+| experiment | `card` · `record` · `notes` · `summary` · `overview` · `summary_history` · `sessions` · `artifacts` · `lineage` · `groups` · `versions` · `reproduce` · `code` · `inherited` |
+| project | `card` · `record` · `notes` · `summary` · `overview` · `summary_history` · `sessions` · `artifacts` · `lineage` · `code` · `readme` · `papers` |
+| artifact | `card` · `record` · `content` · `versions` · `lineage` · `sessions` |
+| dataset | `card` · `record` · `versions` · `lineage` |
+| checkpoint | `card` · `record` · `versions` · `lineage` |
+| source | `card` · `record` · `lineage` |
 | group | `card` · `record` |
 | trial | `card` · `record` · `trajectory` |
 | session | `card` · `record` · `transcript` |
+| sub-note | `card` |
 | team note | `card` · `record` |
 
 `card` is the default and returns `available_views` for that entity — so one call tells you what else you can ask for. The matrix above is documentation, not something to memorise. An unrecognised ref kind is rejected outright rather than guessed at.
@@ -101,9 +105,31 @@ Use the path-list form for a literal dotted key.
 
 ### Notes and summaries
 
-`notes` reads operational notes. `summary` reads the authored Overview Markdown with a bounded notes caveat alongside status and headline context. An excerpt reports `truncated: false` when complete, or `truncated: true` with a detail door.
+`notes` reads operational notes. On a project or experiment:
+
+| View | Reads |
+|---|---|
+| `overview` | The whole Overview page, as the recorders read and write it (`markdown`) |
+| `summary` | Only the block a person wrote on the page (`document`), with status and headline context |
+| `summary_history` | The page's versions, newest first: who, when, through what. `view_options={"version": N}` reads one version's Markdown |
+| `sessions` | The captured agent sessions that worked on it, newest first, each with its own title |
+
+An excerpt reports `truncated: false` when complete, or `truncated: true` with a detail door.
 
 Artifacts and groups carry no notes; read what a file is from its run's or experiment's `notes`.
+
+### Reading a file
+
+```json
+{"refs": ["artifact:<id>"], "view": "content",
+ "view_options": {"grep": "learning_rate", "context_lines": 3}}
+```
+
+`content` returns a file's own text in 40-line sections, with its SHA-256: page with `start_line`, or search within it with `grep` and `context_lines`. It works for any file, whatever it is filed under. A binary file, a file over 2 MiB and a reference refuse, and name `probe artifact download <id>` instead.
+
+### Datasets, checkpoints and sources
+
+The data catalog's kinds are entities too: `dataset:<name>` (or `dataset:<name>@<N>`), `checkpoint:<run>@best`, `@latest` or `@step<N>`, and `source:<key>[@<revision>]`. `versions` is a dataset's version list, or a checkpoint's run's other saves. `lineage` is the provenance walk, which reaches sources: what it came from, or with `view_options={"direction": "downstream"}` what used it (`depth` 1–8; `steps` asks for the methods view).
 
 ### Artifacts resolve by name
 
@@ -122,9 +148,12 @@ One question about **grain**, asked with an argument rather than three tools.
 
 | `mode` | Reads | Also takes |
 |---|---|---|
-| `grouped` | One key reduced over coordinate axes and step buckets | `key` (required), `kind`, `agg`, `by`, `where`, `step_bucket`, `step_from`, `step_to`, `max_rows` |
-| `coordinates` | The run's coordinate catalog | nothing beyond `run_id` |
-| `points` | Raw points, losslessly, one bounded page | `key`, `kind`, `step_from`, `step_to`, `after_id`, `limit` |
+| `grouped` | One key reduced over coordinate axes and step buckets | `run_id` and `key` (required), `kind`, `agg`, `by`, `where`, `step_bucket`, `step_from`, `step_to`, `max_rows` |
+| `coordinates` | The run's coordinate catalog | `run_id` only |
+| `points` | Raw points, losslessly, one bounded page | `run_id` (required), `key`, `kind`, `step_from`, `step_to`, `after_id`, `limit` |
+| `series` | Several runs × keys in one read, to compare curves. One row per series, downsampled to `max_points` (default 100, endpoints and extremes kept) | `run_ids` and `keys` (both required), `step_from`, `step_to`, `smoothing`, `max_points` |
+
+A `series` row is never split: one too big for `token_budget` is refused with the budget it needs (`min_token_budget`).
 
 <Warning>
 **Each mode is validated against its own column, not against the union.** An argument the chosen mode does not read is refused, never dropped — `mode="points"` with `by=["rank"]` is an error rather than a page of ungrouped points.
@@ -134,11 +163,24 @@ That is the whole hazard of a merged tool: the schema is the union of the branch
 
 ## `browse`
 
+| `mode` | Lists |
+|---|---|
+| `tree` (default) | Projects → experiments → runs, walked with `ref` and `depth` |
+| `runs` | Every run filed under a project, flat and newest first. `active=true` is what is running now |
+| `workspaces` | The team's workspaces, with their names |
+| `notes` | The notes catalog across every project, experiment and run. `query` matches note text literally |
+| `files` | The team's Shared folder, or one workspace's files |
+| `datasets` | Team datasets, and dataset files runs logged without registering them. `registered`, `project` and `query` narrow |
+| `checkpoints` | Every checkpoint team-wide: step, best, stored state, run. `project`, `experiment`, `run`, `best` and `stored` narrow |
+| `sources` | External sources (Hub ids, buckets, URLs), with how many runs use each. `provider`, `kind` and `query` narrow |
+
+Each mode refuses arguments it does not read. At the lab root, `tree` also lists your runs that are not filed in a project yet (`unfiled`).
+
 Defaults to `limit=10` per source list and uses backend-issued positions, so nested children and independent project lists are preserved under one output cap. Its backend must support continuation handles; legacy browse cursors require a fresh read.
 
 ## Removed tools
 
-`get_metrics_grouped`, `get_run_coordinates`, `export_metric_points`, `research_context`, `research_search`, `research_get`, `research_compare` and `research_resolve` have been **removed**. They answered as delegations or aliases for one release; that window has closed and calls to them now fail as unknown tools.
+`get_metrics_grouped`, `get_run_coordinates`, `export_metric_points`, `research_context`, `research_search`, `research_get`, `research_compare` and `research_resolve` have been **removed**. They answered as delegations or aliases for one release; that window has closed and calls to them now fail as unknown tools. `search_knowledge` was renamed `search` with no alias: a session started before the rename gets an unknown-tool error until it restarts.
 
 There is no trace-file tool — no backend trace index has ever existed, so it answered `matches: []` to every query, which agents read as "this file has no lineage". To trace a path, URI or hash, use `search` (its exact channel matches artifacts) and follow `entity(view="lineage")`.
 

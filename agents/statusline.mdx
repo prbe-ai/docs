@@ -12,9 +12,15 @@ The wizard's **Install** adds a Probe segment under Claude Code's input box, so 
 
 | Shows | Means |
 |---|---|
-| `○ untracked` | This conversation is not recording |
-| `● folding` | Tracked, against the `folding` project |
-| `● folding · running` | Tracked, and a run is currently open |
+| `● tracking` | Recording, and nothing is filed in a project yet |
+| `● tracking → folding` | Recording, against the `folding` project |
+| `● tracking → folding · running` | Recording, and a run is currently open |
+| `● read-only` | `/probe read`: searches work, nothing is recorded |
+| `● off` | `/probe off`: no Probe calls at all |
+
+Where [the Probe daemon](/agents/daemon) records, the words say so: `on (daemon) → folding`, `on (daemon degraded)` while the daemon is not recording for the session, `read only (daemon)`, or `on (daemon) · paused: not ML` when it paused itself in a session that is not ML work. After `/probe inline` it reads `on (inline) → folding`.
+
+When the session's transcript is not being captured, the line adds `· not capturing session transcript:` and the reason. The work still lands; the conversation does not.
 
 ## It keeps what you already had
 
@@ -34,7 +40,7 @@ Uninstalling Probe removes the segment and restores exactly what it wrapped.
 The expensive failure is not "tracking was off". It is "tracking was off and nobody noticed for three weeks". A session that is recording nothing looks exactly like a session that is recording everything, right up until you go looking for the run.
 
 <Tip>
-If the indicator says `untracked` and you expected otherwise, `probe session status` gives the full decision — which default applied, what the machine default is, and whether the capture daemon is actually running.
+If the indicator says `read-only` or `off` and you expected otherwise, `probe session status` gives the full decision — which default applied, what the machine default is, and whether the capture daemon is actually running.
 </Tip>
 
 ## Changing what it reports
@@ -45,9 +51,9 @@ If the indicator says `untracked` and you expected otherwise, `probe session sta
 
 ```bash
 probe session track                    # this conversation
-probe session default on --folder .    # what new sessions in this folder start at
+probe session default on               # what new sessions on this computer start at
 ```
 
-What new sessions start at everywhere else is **Defaults → Probe in new sessions** in the wizard (`npx probe-research`).
+The wizard's **Defaults → Probe in new sessions** (`npx probe-research`) sets the same default. To keep a folder out of Probe, use [`.probe.config`](/agents/probe-config): folder defaults (`--folder`) are retired.
 
 See [the switch](/agents/overview#the-switch).

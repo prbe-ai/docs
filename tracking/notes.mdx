@@ -9,32 +9,24 @@ Prose in Probe has three homes, and they are separate on purpose. Putting the wr
 | | Where it shows | Who writes it | Write semantics |
 |---|---|---|---|
 | **`description`** | Everywhere the entity is listed | Anyone | Short field |
-| **Overview** (`summary_markdown`) | The entity page, below the AI summary | Teammate-facing | Whole document, last-write-wins |
+| **Overview** (the [summary](/tracking/summaries)) | A project's or experiment's page | The recorders, plus blocks people keep | Checkout, edit, push; merges |
 | **notes** | The notes surface; read by agents | Agents and people | Append, merge-on-push, sub-notes |
 
 On top of those is one **team note**: a single shared document injected into every agent session on every machine.
 
 ## Overview documents
 
-The durable, teammate-facing document. Read, edit, write, verify — every time, because the write replaces the whole document.
-
-```bash
-probe project get folding | jq -r '.summary_markdown // ""' > PROJECT.md
-$EDITOR PROJECT.md
-probe project set folding --summary @PROJECT.md
-probe project get folding | jq -r '.summary_markdown // ""'      # verify what landed
-```
-
-The same shape works on experiments and runs (`probe experiment set`, `probe run set`). A line containing only `[README](https://github.com/owner/repo)` embeds that repository's README at that point.
+The durable, teammate-facing page of a project or experiment. The agents that record your sessions keep it, and anything a person writes on it stays theirs. Edit it with `probe summary checkout` and `probe summary push`; see [summaries](/tracking/summaries). Runs have no Overview: an experiment's summary is the write-up of its runs.
 
 ## Notes
 
 ```bash
 probe notes show --project folding
-probe notes write --project folding --append ./handoff.md
+probe notes append --project folding --text "Handoff: the lr sweep is done; seed 3 diverged and is excluded."
+probe notes edit --project folding --old "seed 3 diverged" --new "seeds 3 and 5 diverged"
 ```
 
-`--append` exists because concurrent handoffs must not overwrite one another. For anything larger than an append, use checkout and push.
+`append` adds a paragraph to the end, and keeps anything a teammate wrote meanwhile, so concurrent handoffs never overwrite one another. `edit` replaces one exact piece of text, which must appear exactly once. Both take literal text only. For anything larger, use checkout and push. (`probe notes write` replaces a project's whole notes document without merging; keep it for a document you are authoring outright.)
 
 ### The editing loop
 
@@ -44,9 +36,9 @@ $EDITOR <the file it printed>
 probe notes push --run $RUN                # send it back, merging
 ```
 
-**Push merges.** A paragraph a teammate wrote while you were editing survives; it is not silently overwritten. `--force` replaces the server's document without merging, and `--steal` takes a checked-out file that has unpushed edits.
+**Push merges.** A paragraph a teammate wrote while you were editing survives; it is not silently overwritten. `push --force` replaces the server's document without merging, deleting anything written since your checkout; it is an escape hatch, never a step in a routine. `checkout --steal` takes a checked-out file that has unpushed edits.
 
-Notes live on a project, an experiment or a run — `--project`, `--experiment`, `--run` — plus the one team note (`--team`). Files and run groups carry none: describe them in the notes of the run or experiment they belong to.
+Notes live on a project, an experiment or a run — `--project`, `--experiment`, `--run` — plus the one team note (`--team`, on `append` and `edit`). Files and run groups carry none: describe them in the notes of the run or experiment they belong to.
 
 ### Sub-notes
 
@@ -54,7 +46,7 @@ One entity can carry several titled documents beside its main note.
 
 ```bash
 probe notes list --project folding                       # titles, fullness, when. No bodies
-probe notes create --project folding --note "eval protocol"
+probe notes create --project folding --title "eval protocol"
 probe notes show --project folding --note "eval protocol"
 probe notes checkout --project folding --note "eval protocol"
 probe notes rename --project folding --note "eval protocol" --to "evaluation protocol"
@@ -67,7 +59,16 @@ Duplicate titles are legal — tabs key on id — but a title-addressed write to
 `probe notes delete` removes the sub-note **and its version history**, permanently, and needs a credential with the `delete` scope.
 </Warning>
 
-### Coverage
+### Size limits
+
+Notes are capped in **tokens**, not characters:
+
+| Notes of | Cap |
+|---|---|
+| A project, an experiment, or the team note | 30,000 tokens |
+| A run | 2,000 tokens |
+
+Each sub-note has its own cap, the same as its entity's. A write past the cap is refused with a message naming the limit. `probe notes list` shows each sub-note's fullness as `stored_tokens` of `limit_tokens`, and a project, experiment or run read carries `notes_tokens` and `notes_remaining_tokens`.
 
 ```bash
 probe notes status            # how full every notes document in this team is

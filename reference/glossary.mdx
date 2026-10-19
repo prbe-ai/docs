@@ -8,11 +8,13 @@ icon: "book-bookmark"
 
 | Term | Means |
 |---|---|
-| **Workspace** | A shelf for projects and files. Every team member reads every workspace; writes can be restricted |
-| **Project** | A body of work, with a declared kind (`training`, `inference`, `research`, `general`) |
+| **Workspace** | A shelf for projects. Every team member reads every workspace; writes can be restricted |
+| **Computer's workspace** | Where a computer files its new projects, set by the wizard or `probe workspace use` |
+| **Project** | A body of work, with a declared kind (`training`, `evaluation`, `research`, `general`) |
 | **Subproject** | A phase of a bigger effort, nested under its parent |
 | **Reference** | A lateral link between projects, for when containment would claim something false |
-| **Experiment** | One question, and the runs that answer it. The question is first-write-wins |
+| **Experiment** | One question, and the runs that answer it. Stored as a project of kind `experiment`. The question is first-write-wins |
+| **Conclusion** | An experiment's answer to its question, shown beside its header |
 | **Run** | One execution: metrics, files, spans, a code snapshot, a lifecycle outcome |
 | **Project-direct run** | A run with no experiment — the honest home for work with no hypothesis |
 | **Run group** | Peer runs: a sweep, an ensemble, the ranks of a distributed job |
@@ -38,13 +40,15 @@ icon: "book-bookmark"
 
 | Term | Means |
 |---|---|
-| **Artifact** | A file with an anchor — run, experiment, project, workspace or Shared |
+| **Artifact** | A file with an anchor — run, experiment, project or Shared |
 | **Dataset** | A team-wide name with versions (`dataset:c4-clean@3`), each made by a run; see [Datasets](/tracking/datasets) |
 | **Source** | Where outside data came from: a Hub dataset or model, a bucket, a URL, a repo |
+| **Checkpoint** | A saved model state from a run. It remembers what the run had trained on when it was saved |
+| **Data catalog** | The dashboard's **Data** page: datasets, checkpoints and sources; see [Data](/dashboard/data) |
 | **`hash` level** | A `.probe.config` level: runs over a path are recorded, its files only by hash and row count |
 | **Anchor** | Which entity an artifact belongs to |
 | **Reference** | An artifact recorded as a pointer, with the bytes left where they are |
-| **Shared** | The team-owned folder. One per team; every member sees all of it. The level reuse resolves against |
+| **Shared** | The team-owned folder, home of the team's datasets. One per team; every member sees all of it |
 | **Snapshot** | Code, environment and hardware captured at run start |
 | **Execution record** | The server-assembled record a reproduction reads from |
 
@@ -53,12 +57,11 @@ icon: "book-bookmark"
 | Term | Means |
 |---|---|
 | **description** | The short identity line |
-| **Overview** (`summary_markdown`) | The durable, teammate-facing document. Whole-document, last-write-wins |
+| **Summary** | A project's or experiment's teammate-facing page (its Overview page), written by the recorders; see [Summaries](/tracking/summaries) |
+| **Recorder** | Whoever records a session: the Probe daemon's writer, or the agent itself working inline |
 | **Notes** | The operational briefing agents read and write. Append, merge-on-push, sub-notes |
 | **Sub-note** | A titled document beside an entity's main note |
 | **Team note** | One shared document injected into every agent session. Has a render budget |
-| **Rule** | A team convention in workflow memory, returned when its situation applies |
-| **Situation** | The moment a rule is about — launching a run, deploying, running an eval |
 
 ## Clients
 
@@ -68,7 +71,9 @@ icon: "book-bookmark"
 | **`probe-research`** | The tracking plugin: skills plus the read-only MCP server |
 | **`probe-research-tap`** | The session-capture plugin |
 | **The wizard** | `npx probe-research` — install, import, configure, diagnose |
-| **The switch** | Per-conversation state: `on`, `read`, `off` |
+| **The switch** | Per-conversation state: `on`, `read`, `off`, `inline` |
+| **Probe daemon** | A process beside your coding agent that records the session and reads the team's work for it; see [the daemon](/agents/daemon) |
+| **Agent sign-in** | A coding agent signing its person up or in; the person signs in with Google and types the agent's 6-digit code |
 | **The outbox** | The durable local write queue |
 | **Context** | A named local account: endpoint, credentials, anchors |
 
@@ -77,7 +82,8 @@ icon: "book-bookmark"
 | Term | Means |
 |---|---|
 | **Session** | A coding-agent conversation, captured or imported |
-| **Digest** | A condensed reading of a session or a workspace's recent activity |
+| **Digest** | A condensed reading of a workspace's recent activity |
+| **Workspace canvas** | The board **Projects** opens on: every project, its experiments and runs, and the links between them |
 | **Knowledge** | The one search index over documents, sessions, code and notes |
 | **Exact channel** | The search channel that matches identifiers, names and paths |
 | **Semantic channel** | The search channel that matches meaning |
