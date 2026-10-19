@@ -41,7 +41,7 @@ probe dataset show dataset:c4-clean
 
 - **Bytes stay where they are by default.** A folder is identified by its manifest: each file's path, size and SHA-256 (hashed within the run's I/O budget; past it, a fingerprint). Probe stores the manifest, never the data.
 - **Same bytes, same version.** Registering identical bytes again adds no version; it records the run as a check on the existing one.
-- **Store it in Probe** with `--upload` / `upload=True`, file or folder. Unchanged files are never uploaded twice. Hosted data has its own quota: 50 GB on the free plan (datasets and checkpoints together), no limit on paid plans.
+- **Store it in Probe** with `--upload` / `upload=True`, file or folder. Unchanged files are never uploaded twice. Hosted data has its own quota: 50 GiB on the free plan (datasets and checkpoints together), no limit on paid plans.
 - **A step done by hand:** `probe dataset add OUT --name N --from dataset:raw@1 --step "dedup by hand" --project P` records the step as a finished run.
 - **A mixture:** `log_dataset(..., composition={"dataset:a@2": 24000, "dataset:b@1": 10000})` (rows or shares) records what the new dataset is made of.
 - **Read-restricted projects:** registering from a run in one needs `--publish` / `publish=True`, because the catalog is team-wide.
@@ -49,20 +49,36 @@ probe dataset show dataset:c4-clean
 
 ## What a run used
 
-Say what a run trained on, and with what role (`train`, `validation`, `test`, `eval`, `init`, `tokenizer`, `other`):
+Say what a run trained on, and with what role (`train`, `validation`, `test`, `eval`, `init`, `tokenizer`, `other`). Name the **exact** version or save:
 
 ```python
 run.use_dataset("dataset:c4-clean@3", role="train")
 run.use_mixture({"dataset:c4-clean@3": 0.7, "dataset:code@1": 0.3}, role="train")   # shares sum to 1
-run.use_checkpoint("checkpoint:sft-7b@best", role="init")
+run.use_checkpoint("checkpoint:sft-7b@step4000", role="init")
 ```
 
 ```bash
-probe dataset use dataset:c4-clean@3 --run sft-7b --role train
-probe checkpoint use checkpoint:sft-7b@best --run distill-1
+probe dataset use dataset:c4-clean@3 --run sft-7b --role train \
+  --reason "the SFT config's train_file points at the c4-clean v3 folder"
+probe checkpoint use checkpoint:sft-7b@step4000 --run distill-1          # --role init, the default
+probe checkpoint use checkpoint:sft-7b@step4000 --run eval-7b --role eval  # the checkpoint an eval run scored
 ```
 
-`dataset:<name>` without a version means the version current at that moment, stored by its id: history never moves when `@4` lands. The Hugging Face integration records the base model (`init`) and Hub datasets for you.
+A link is stored only when the run's code or an agent records it: Probe never infers one from the files a run read. Each link names one fixed thing — `dataset:<name>@<N>`, `checkpoint:<run>@step<N>` or `source:<key>@<revision>` — so history never moves when `@4` lands. `probe dataset show` lists a dataset's versions and `probe checkpoint list --run RUN` a run's saves.
+
+- **The CLI refuses a moving ref.** A bare `dataset:<name>`, `@latest`, `@best` or a source with no revision would pin whatever is newest when you link it, not what the run read.
+- **In a script**, a moving ref is pinned to what it names at the moment of the call. It is never queued for later: if Probe is unreachable, or the run is offline, the call warns and records nothing. A fixed ref is always safe.
+- `--reason` says in a sentence why the run used it. `--evidence <stream>:<offset>:<index>` (repeatable) names the session event the link rests on, as the transcript shows it.
+- The Hugging Face integration records the base model (`init`) and Hub datasets for you.
+
+### Checking and correcting a run's links
+
+```bash
+probe run inputs sft-7b              # every file the run read: path, size, hash, first seen
+probe edge remove <edge-id>          # drop a wrong link, then add the right one
+```
+
+`probe run inputs` lists what the SDK saw the run read. Each read carries `stored_as`: the catalog entries holding exactly those bytes. That is evidence for choosing the right link, never a link itself — record the use with `probe dataset use` or `probe checkpoint use`. A link that is wrong, or has the wrong role, is fixed by removing its edge (`probe edge remove`) and recording the right one.
 
 ## Checkpoints
 
@@ -75,12 +91,14 @@ probe checkpoint list --best
 
 A checkpoint freezes the run's declared training inputs at the moment it was saved, so switching datasets later never rewrites what an old checkpoint learned from. After a rewind (`--rewind-to-step`), checkpoints from the discarded range are marked **rewound** and are never picked by `@latest` or `@best`.
 
+**Uploaded checkpoints come back byte for byte.** With `PROBE_CHECKPOINTS=upload` (or `checkpoints="upload"`), a checkpoint's files are never rewritten: a file holding something the credential scrubber would mask is not stored at all, with a warning, and the download names it as missing. Checkpoints stored masked by an older client stay masked; `Client.download_checkpoint` warns with `ArtifactRedactedWarning` naming those files, and `probe artifact download --checkpoint` prints a note. Upload them again to fix them.
+
 ## Where it came from
 
 ```bash
-probe provenance checkpoint:sft-7b@best           # upstream: datasets, sources, steps
+probe provenance checkpoint:sft-7b@step4000          # upstream: datasets, sources, steps
 probe provenance source:hf:datasets/allenai/c4 --down   # everything that used it
-probe provenance checkpoint:sft-7b@best --steps   # the methods section
+probe provenance checkpoint:sft-7b@step4000 --steps  # the methods section
 ```
 
 ```text
@@ -90,7 +108,7 @@ probe provenance checkpoint:sft-7b@best --steps   # the methods section
 4  run     sft-7b (train)   -> checkpoint step 4000 (best)
 ```
 
-The walk also follows files nobody registered: a file one run wrote and another read is matched by its hash, so the chain exists without `log_dataset` anywhere. For data Probe must not read, use the [`hash` level](/agents/probe-config#hash-lineage-for-data-probe-must-not-read): the same chain, from hashes and row counts only.
+The walk follows recorded links only: what each run made (`log_dataset`, `probe dataset add`) and what each run used (`use_dataset`, `probe dataset use`, `probe checkpoint use`). Nothing is matched by file bytes, so a step that recorded no use is a gap in the chain. For data Probe must not read, the [`hash` level](/agents/probe-config#hash-lineage-for-data-probe-must-not-read) records each file's hash and row count instead of its contents.
 
 ## Downloading
 

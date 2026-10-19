@@ -34,6 +34,10 @@ npx probe-research install
   </Step>
 </Steps>
 
+<Tip>
+  Already working in a coding agent? It can sign you up or in itself: it follows [useprobe.ai/auth.md](https://www.useprobe.ai/auth.md), and your only browser step is signing in with Google and typing the 6-digit code the agent shows you. See [agent sign-in](/cli/auth#agent-sign-in).
+</Tip>
+
 <Info>
   Only instrumenting a training script, with no coding agent involved? `pip install probe-research` and go straight to the [SDK quickstart](/sdk/quickstart).
 </Info>
@@ -68,15 +72,15 @@ Everything lands in the same place: the [dashboard](/dashboard/overview) at [res
   </Accordion>
 
   <Accordion title="Files and code" icon="folder">
-    Artifacts anchored to a run, experiment, project, workspace or the team's Shared folder — content-addressed, deduplicated by SHA-256, versioned. Plus non-disruptive code and environment snapshots that can be restored later.
+    Artifacts anchored to a run, experiment or project — content-addressed, deduplicated by SHA-256, versioned. A data catalog of datasets, sources and checkpoints, with where each came from. Plus non-disruptive code and environment snapshots that can be restored later.
 
-    See [artifacts](/tracking/artifacts) and [snapshots](/tracking/snapshots).
+    See [artifacts](/tracking/artifacts), [datasets](/tracking/datasets) and [snapshots](/tracking/snapshots).
   </Accordion>
 
   <Accordion title="Prose that survives the session" icon="pen">
-    Three kinds, deliberately separate: a short `description` for identity, a teammate-facing Markdown **Overview**, and agent-facing **notes** with titled sub-notes and merge-on-push editing. Plus a shared **team note** injected into every agent session.
+    Three kinds, deliberately separate: a short `description` for identity, a teammate-facing **summary** page that the recorders write as work happens, and agent-facing **notes** with titled sub-notes and merge-on-push editing. Plus a shared **team note** injected into every agent session.
 
-    See [notes](/tracking/notes).
+    See [summaries](/tracking/summaries) and [notes](/tracking/notes).
   </Accordion>
 
   <Accordion title="Coding-agent sessions" icon="message">
@@ -85,10 +89,10 @@ Everything lands in the same place: the [dashboard](/dashboard/overview) at [res
     See [session capture](/agents/capture).
   </Accordion>
 
-  <Accordion title="Literature and team rules" icon="book">
-    Papers recorded against a research project — what each says, the repo read alongside it, and where the two disagree. And workflow memory: the conventions somebody declared out loud, returned to an agent when they apply.
+  <Accordion title="Literature" icon="book">
+    Papers recorded against a research project — what each says, the repo read alongside it, and where the two disagree — and the links between them, drawn as a tree of how the reading went.
 
-    See [papers](/tracking/papers) and [team rules](/tracking/rules).
+    See [papers](/tracking/papers).
   </Accordion>
 </AccordionGroup>
 
@@ -96,10 +100,10 @@ Everything lands in the same place: the [dashboard](/dashboard/overview) at [res
 
 One index covers all of it. An exact channel matches identifiers, names and paths; a semantic channel matches meaning. Both answer the same query, sectioned by source, with per-result provenance.
 
-That is what makes the rest worth doing: a run you recorded in March is findable in September by describing it, and so is the session where you decided to run it.
+That is what makes the rest worth doing: a run you recorded in March is findable in September by describing it, and so is the session where you decided to run it. In the dashboard, **Search** finds work by name and **Ask** finds it by meaning.
 
 <Card title="Search and knowledge" icon="magnifying-glass" href="/dashboard/search">
-  Filter grammar, semantic queries, and what the index actually covers.
+  Search by name, Ask by meaning, the filter grammar, and what the index actually covers.
 </Card>
 
 ## Where to go next

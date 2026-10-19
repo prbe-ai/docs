@@ -3,9 +3,19 @@
   "theme": "mint",
   "name": "Probe Research",
   "colors": {
-    "primary": "#171717",
-    "light": "#E8E8E8",
-    "dark": "#0A0A0A"
+    "primary": "#1b1c1a",
+    "light": "#eceae2",
+    "dark": "#1b1c1a"
+  },
+  "appearance": {
+    "default": "light",
+    "strict": false
+  },
+  "background": {
+    "color": {
+      "light": "#f6f5f1",
+      "dark": "#000000"
+    }
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -48,8 +58,8 @@
           "tracking/snapshots",
           "tracking/trajectories",
           "tracking/notes",
-          "tracking/papers",
-          "tracking/rules"
+          "tracking/summaries",
+          "tracking/papers"
         ]
       },
       {
@@ -76,6 +86,7 @@
         "icon": "robot",
         "pages": [
           "agents/overview",
+          "agents/daemon",
           "agents/skills",
           "agents/probe-config",
           "agents/mcp",
@@ -92,7 +103,7 @@
           "dashboard/projects",
           "dashboard/experiments-runs",
           "dashboard/charts",
-          "dashboard/files",
+          "dashboard/data",
           "dashboard/search",
           "dashboard/assistant",
           "dashboard/workspaces"
@@ -157,5 +168,15 @@
     }
   },
   "description": "Probe Research is the system of record for a team's ML work — projects, experiments, runs, metrics, artifacts, notes and coding-agent sessions, with semantic search over all of it.",
-  "seo": {}
+  "seo": {},
+  "redirects": [
+    {
+      "source": "/tracking/rules",
+      "destination": "/tracking/notes"
+    },
+    {
+      "source": "/dashboard/files",
+      "destination": "/dashboard/data"
+    }
+  ]
 }

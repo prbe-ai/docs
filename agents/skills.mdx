@@ -20,6 +20,14 @@ The one skill that changes state rather than behaviour.
 
 States are stored as `full` / `read-only` / `off` — the older spelling, kept because every other copy of the client on the machine reads those files. Both spellings are accepted wherever a state is typed.
 
+Where [the Probe daemon](/agents/daemon) records, the same switch reads `on (daemon)`, `read only (daemon)` and `off`, and gains one more position, which only you can type:
+
+```text
+/probe inline  the daemon stops; the agent reads and writes Probe itself
+```
+
+Any other `/probe` move hands Probe back to the daemon.
+
 <Note>
 This skill does not track anything. It only moves the switch — and only when you move it.
 </Note>
@@ -49,7 +57,7 @@ The arc it enforces:
     A queued write is not a delivered one. The claim needs a read.
   </Step>
   <Step title="Close with the real lifecycle outcome">
-    `completed`, `failed` or `canceled` — whichever actually happened.
+    `completed`, `failed` or `canceled` — whichever actually happened. When the work answers the experiment's question, the agent records the answer and its evidence as the experiment's conclusion (`probe experiment set EXP --conclusion "..."`), and keeps the summary current with `/write-summary`.
   </Step>
 </Steps>
 
@@ -91,25 +99,52 @@ Ensures the team note carries nothing false and has not grown past its render bu
 
 The trigger is **size**, not the calendar.
 
-## `/read-rules` and `/set-rule` — workflow memory
+## `/write-summary` — the project and experiment pages
 
-<CardGroup cols={2}>
-  <Card title="/read-rules" icon="book-open">
-    Reads the team's stored conventions for the situation you are about to be in. **Before** an irreversible or shared-consequence step, and on arriving in an unfamiliar workspace — never after.
-  </Card>
-  <Card title="/set-rule" icon="gavel">
-    Records one. Fires when you say how something *should* be done, or correct the agent in a way that applies to anyone doing this tomorrow.
+Each project and experiment has a summary: its Overview page, the page people read to catch up. Whoever records the work keeps it — the agent itself, or the Probe daemon's writer. Nothing on the server writes it. See [Summaries](/tracking/summaries).
 
-    **Nothing is written until you confirm it.**
-  </Card>
-</CardGroup>
+The agent writes the first one when it creates the project or experiment, then updates it on a result, a decision or a change of direction:
 
-Both are behind the workflow-memory rollout. See [Team rules](/tracking/rules).
+```bash
+probe summary checkout --project folding     # the draft's path is printed
+# edit the part that changed, in place
+probe summary push --project folding         # merges if the page moved meanwhile
+```
+
+The first `probe` write of a session to a project or experiment checks its summary out on its own and prints the path. Blocks a person wrote on the page come back as `<!-- kept: ... -->` and are left alone.
+
+Five page skills sit beside it, read before a page is edited:
+
+| Skill | Covers |
+|---|---|
+| `overview-page` | What a page says, in what order, and how long |
+| `overview-contract` | The page's HTML, CSS and chart rules. `probe summary push` refuses a page that breaks one |
+| `overview-charts` | When to chart what a run recorded, and how. The agent declares a series; the page draws it |
+| `artifact-diagramming` | Inline SVG diagrams that show a mechanism |
+| `artifact-design` | The page's look: palette, type, layout |
+
+## `/overview-visuals` — tables and charts
+
+Picks an experiment's tables and charts in its Metrics center, or a project's tables. The agent names fields and runs; the server reads the numbers itself.
+
+```bash
+probe visuals options --experiment dockq     # what may be named, and the current list, written to a file
+# edit the list
+probe visuals set --experiment dockq
+```
+
+`/track-work` has the agent set an experiment's tables and charts when the experiment closes.
+
+## `/plan-research-review` — plan before code
+
+Before the agent writes code for ML research (reproducing a paper, building on a paper's or a repo's code, a new method or experiment), it maps the plan to the code that already exists and asks you about every gap, instead of guessing.
+
+It runs when you ask for it, or when the managed rules block says to. That routing line is the wizard's **Settings → Research plan review**, on by default.
 
 ## Where skills come from
 
 Skills ship inside the `probe-research` plugin and follow the Agent Skills standard, so they load in any host that implements it. Updating the plugin updates the skills — there is nothing to sync by hand.
 
-<Warning>
-Plugin content cannot vary per user, so a skill gated behind a per-user flag is simply absent from the package while that flag is on. `/set-rule` is the current example: its absence is the gate working, not a broken install.
-</Warning>
+Where the Probe daemon records, the agent gets the daemon profile instead: `/probe`, `/instrument-code`, `/plan-research-review` and `/visualize-progress`, and no MCP server. The daemon does the recording and the reading. `/probe inline` hands the recording skills back to the agent for that session.
+
+Capy gets its own bundle (`probe-capy`, `track-work`, `instrument-code`, `plan-research-review`, `edit-notes`, `audit-team-note`). See [Capy](/agents/capy).

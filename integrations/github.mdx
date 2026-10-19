@@ -22,11 +22,11 @@ A gated route answers 404 rather than 403, so the gate does not advertise a feat
 
 ```bash
 probe project code list folding
-probe project code attach folding --repo owner/name
+probe project code attach folding owner/name
 probe commits folding                    # one page of the timeline, newest first
 ```
 
-The commit timeline is read **through** GitHub by the backend. Nothing is copied, so attaching is cheap and detaching loses nothing.
+The commit timeline is read **through** GitHub by the backend. Nothing is copied, so attaching is cheap and detaching (`probe project code detach`) loses nothing. Attaching grants no access: the repository must already be covered by the team's GitHub App installation, or be public. `--branch` and `--path` (a monorepo subtree) narrow what is followed.
 
 ## READMEs on project pages
 

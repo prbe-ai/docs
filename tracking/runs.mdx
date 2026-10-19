@@ -45,9 +45,9 @@ Omit `--experiment` entirely. The run hangs off the project with no experiment i
 <CardGroup cols={3}>
   <Card title="child" icon="sitemap">
     ```bash
-    probe run child $RUN --name eval
+    probe run child $RUN --relation retry
     ```
-    A sub-run nested under a parent.
+    A run descended from this one: `fork`, `resume`, `retry` or `branch`. The relation is required.
   </Card>
   <Card title="fork" icon="code-branch">
     ```bash
@@ -62,6 +62,8 @@ Omit `--experiment` entirely. The run hangs off the project with no experiment i
     A peer in a sweep, ensemble or distributed job.
   </Card>
 </CardGroup>
+
+A run that **consumed** another's output — an eval of its checkpoint, an SFT run over its rollouts — is not its child. Record that as a use (`probe checkpoint use ... --role eval`, see [datasets](/tracking/datasets#what-a-run-used)) or a lineage edge (`probe edge add --relation evaluates_on`).
 
 ## Wrapping a command
 
@@ -79,7 +81,7 @@ probe exec $RUN -- python train.py          # or attach to a run you already ope
 ## Closing one
 
 ```bash
-probe run end $RUN --status completed      # completed | failed | canceled
+probe run end $RUN --status completed      # completed | failed | crashed | canceled
 probe run check $RUN                       # capture completeness; exit 2 if incomplete
 ```
 
@@ -109,9 +111,14 @@ probe coordinates $RUN              # every coordinate any fact landed on
 
 ```bash
 probe run set $RUN --name "DockQ baseline" --description "Stable reference run"
-probe run set $RUN --summary @RUN.md
+probe run set $RUN --notes "the verifier was broken before step 900; scores below it are not comparable"
+probe run set $RUN --status failed       # correct a FINISHED run's status
 probe link $RUN --set wandb_run_id=abc --set gpu_job=rp-9931
 ```
+
+A description says what the run *is*. `--notes` says what a later reader should *distrust* about it, and is usually learned after the run finished; it replaces the run's notes (see [notes](/tracking/notes) to append instead). A run has no Overview page of its own: its experiment's [summary](/tracking/summaries) is the write-up.
+
+`--status` corrects a finished run's record and keeps its start and end times; `failed` emails the run's launcher. To close a run that is still running, use `probe run end`.
 
 `probe link` attaches foreign keys under `metadata.foreign_keys` — how a Probe run stays joinable to the scheduler, tracker or ticket it came from.
 

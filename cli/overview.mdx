@@ -79,6 +79,8 @@ probe project use folding
 probe run start --experiment dockq        # no --project needed
 ```
 
+`probe workspace use` sets **this computer's workspace**: every new project made on this computer, by the CLI, the Probe daemon or an SDK run, is filed there. The install asks for it when your team has more than one workspace. On such a team with none set, creating a project is refused rather than guessed.
+
 The active account is the wizard's to switch (`probe wizard --action account`); `probe context list` shows which one is answering.
 
 Override per call with `--workspace-id`, `--workspace`, or `--project`.
@@ -89,9 +91,11 @@ Every read command prints JSON, so `jq` works everywhere:
 
 ```bash
 probe get $RUN | jq -r '.status'
-probe project get folding | jq -r '.summary_markdown // ""'
+probe project get folding | jq -r '.description'
 probe run list --experiment dockq | jq -r '.items[].name'
 ```
+
+A project's or experiment's summary (its Overview page) is not part of `get`. Whoever records the work keeps it, and `probe summary checkout --project folding` writes it to a file you can read or edit. See [Summaries](/tracking/summaries).
 
 ## Exit codes
 
@@ -110,7 +114,7 @@ probe run check $RUN --verify || echo "not reproducible yet"
 
 <CardGroup cols={2}>
   <Card title="Every command" icon="list" href="/cli/commands">
-    All 40 command groups, with what each one is for.
+    Every command group, with what each one is for.
   </Card>
   <Card title="Authentication" icon="key" href="/cli/auth">
     Device flow, tokens, contexts, and the read-only MCP credential.

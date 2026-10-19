@@ -1,10 +1,10 @@
 ---
 title: "Projects"
-description: "The directory of work: kinds, tabs, subprojects, digests and published pages."
+description: "The directory of work: kinds, the project page, the Metrics center, papers, subprojects and published pages."
 icon: "folder-tree"
 ---
 
-The Projects page is the directory of everything filed in the current workspace. Cards carry the project's name, its owner badge, its kind, and a **Details** column that renders the page's first figure — a chart or diagram — with its caption underneath. Pages without a figure show the authored description instead.
+**Projects** opens on the [workspace canvas](/dashboard/overview#the-workspace-canvas): every project in the current workspace on one board. Turn the canvas off in **Settings** → **Preferences** to get the Projects list instead: the workspace digest, then one row per project with a **Details** column that shows its first chart or diagram, or its description when it has none. The list filters by kind and sorts by **Recently updated** or **Name A–Z**.
 
 Use the workspace switcher to browse elsewhere, or **All workspaces** to see everything.
 
@@ -12,48 +12,61 @@ Use the workspace switcher to browse elsewhere, or **All workspaces** to see eve
 
 A project's kind is fundamental identity, declared at creation and not a reader preference — there is no relabel control.
 
-| Kind | Leads with | Empty Experiments tab |
-|---|---|---|
-| `training` | Experiments | Kept |
-| `inference` | Experiments | Kept |
-| `research` | **Papers** | Dropped |
-| `general` | — | Dropped |
+| Kind | Its Overview leads with |
+|---|---|
+| `training` | The Metrics center: experiment comparisons, tables and charts |
+| `evaluation` | The Metrics center |
+| `general` | The Metrics center |
+| `research` | Its papers, in the explorer and on the canvas |
+
+`evaluation` used to be called `inference`. Every such project was converted, and `inference` is still accepted on input as an alias that is stored as `evaluation`. An experiment is itself stored as a project of kind `experiment`, filed under its parent.
 
 <Note>
-**Content always wins over the preset.** A tab with real rows renders whatever the kind says, and an unknown kind renders as `general` rather than breaking.
-
 Kind reaches the project page only. It never restructures an experiment or a run — anything type-specific inside an experiment is driven by that experiment's own data.
 </Note>
 
 ## The project page
 
+The header carries the project's name, kind, research tags and contributors. Below it sit the page tabs: **Overview**, then **Data**, **Subprojects**, **Integrations** and **Sessions** as they apply. **Data** appears once the project has recorded data, **Subprojects** once it has subprojects or references, and **Sessions** once a coding-agent session is attributed to it.
+
+**Overview** has three parts:
+
 <Steps>
-  <Step title="Overview">
-    The generated AI summary, then the authored **Overview** document below it. The pill row under the description carries the workspace badge, the kind, and the project's research tags.
+  <Step title="Explorer, on the left">
+    The project's experiments with their runs, **Live runs** (running now) above **Project runs** (runs with no experiment), and on a `research` project its papers. **Filter…** matches experiments, runs and papers. Lists show 10 runs at a time; **Show more runs** reveals 10 more, and selecting an experiment shows all of its runs.
   </Step>
-  <Step title="Content tabs">
-    Experiments, Papers, Files, Knowledge, Runs, Sessions — which ones lead is the kind's doing. Each carries a count badge.
+  <Step title="Center">
+    The Metrics center, or the papers on a `research` project. Selecting an experiment or run in the explorer narrows the center to it. With the canvas on, an **Overview** / **Canvas** toggle switches the project scope to a board of its experiments and runs.
   </Step>
-  <Step title="Knowledge sidebar">
-    Documents relevant to this project, **dated by when their knowledge was created** rather than when Probe discovered them.
+  <Step title="Context pane, on the right">
+    **Summary**, **Notes** and **Files** for the project or the selected experiment; a selected run shows [its own tabs](/dashboard/experiments-runs#runs) here. The Summary is the project's or experiment's page, written by the recorders; an entity nobody has written up yet says "No summary yet." See [summaries](/tracking/summaries). When the center has nothing to show, the Summary moves into the center instead.
   </Step>
 </Steps>
 
+## The Metrics center
+
+`training`, `evaluation` and `general` projects share one Metrics center. Each experiment gets a collapsible section that compares its runs on shared charts, with its saved question above them. Runs with no experiment share a **Project runs** section before the experiments.
+
+- **Tables and charts an agent picked** (tables, metric grids, bar, scatter, heatmap, box, histogram and parallel charts) render inside their experiment's section, before its metric charts. Project-owned tables keep their own headings above the experiment sections.
+- **One search** above every section matches metric keys and reopens matching tables.
+- **The legend and the explorer's eye controls** hide and show runs across a section's charts. Hidden runs stay listed so you can bring them back.
+- **Show more runs**, at the bottom, reveals 50 more runs from the activity-sorted roster.
+
+An experiment section with nothing to chart and no tables is hidden until data arrives. A section whose read was cut short keeps what came back and names what it left out — it never reads as "no data".
+
 ## Papers
 
-On a `research` project, Papers leads. Rows are compact previews — title, source id, repo, and a one-to-two-line summary, plus publication year, venue and up to four category chips where extraction succeeded. The whole row navigates to the paper's own page at `/papers/{id}`.
+On a `research` project, papers are listed in the Overview explorer, even before the project has experiments or runs. Selecting a paper opens it in the context pane: its summary, its source and repository links, its tags and its sharing action. An old `/papers/{id}` link opens the owning project with that paper selected.
 
-A pending extraction shows a small spinner while a bounded, backed-off refresh runs for about a minute, then goes quiet rather than pretending to still be working. `Fetching paper title…` becomes `Untitled paper` after a terminal result.
+The **Canvas** view of a `research` project is one board of its papers. Each paper sits to the right of the earlier paper its first recorded link points to, so the board reads as a tree of how the reading went. Arrows are only links an agent or person recorded (`relates_to`, `discovered_via`, `informed_by`); hover one for its reason.
 
-The tab is **read-only**: recording a paper is an act by whoever did the reading. An empty tab names the capture path rather than offering a form.
-
-See [Papers](/tracking/papers).
+Recording a paper is an act by whoever did the reading, so the dashboard has no add-paper form. See [Papers](/tracking/papers).
 
 ## Subprojects
 
-A phase of a bigger effort appears nested under its parent. Attaching a subproject is an agent or CLI act, like recording a paper — the page shows the tree, it does not compose it.
+A phase of a bigger effort appears nested under its parent, on the **Subprojects** tab and as a compact box on the canvas. Attaching a subproject is an agent or CLI act, like recording a paper — the page shows the tree, it does not compose it.
 
-Projects can also **reference** each other laterally, for when a review informed a training run or two efforts share a method.
+Projects can also **reference** each other laterally, for when a review informed a training run or two efforts share a method. References are listed on the same tab.
 
 ## Workspace digests
 
@@ -67,13 +80,13 @@ A project page can be published, which serves a read-only twin at a public URL: 
 Publishing is a deliberate act with a real blast radius — a published project page is reachable by anyone with the link. A private repository's README embedded in an Overview is served on that page too.
 </Warning>
 
-## Attached code
+## Integrations
 
-The **Code** tab lists the GitHub repositories attached to a project and reads their commit timeline **through** GitHub — nothing is mirrored, so attaching is cheap and detaching loses nothing.
+The **Integrations** tab has a **GitHub** and a **Weights &amp; Biases** panel. The GitHub panel lists the repositories attached to a project and reads their commit timeline **through** GitHub — nothing is mirrored, so attaching is cheap and detaching loses nothing. On an experiment, repositories are managed on the parent project.
 
 ```bash
 probe project code list folding
 probe commits folding
 ```
 
-The Code tab is behind a per-user gate on some accounts. **Connecting GitHub is not** — that is a knowledge source and is generally available, as is the published README read. See [GitHub](/integrations/github).
+The GitHub panel is behind a per-user gate on some accounts. **Connecting GitHub is not** — that is a knowledge source and is generally available, as is the published README read. See [GitHub](/integrations/github).

@@ -6,7 +6,7 @@ icon: "box-archive"
 
 Most teams arrive with years of work already done. This is how it gets in.
 
-Reach it from the wizard's main menu under **Your research → Import research work**, from the last screen of the install, or directly:
+Reach it from the wizard's main menu under **Backfill → Import research work**, from the last screen of the install, or directly:
 
 ```bash
 probe backfill /path/to/work --project existing-project
@@ -17,7 +17,7 @@ Two kinds, chosen independently.
 
 ## Past coding sessions
 
-Your saved Claude Code, Codex and pi transcripts, uploaded into the team knowledgebase so they are searchable alongside everything else.
+Your saved Claude Code, Codex, pi and Kimi Code transcripts, uploaded into the team knowledgebase so they are searchable alongside everything else.
 
 - The picker **detects saved histories independently of which agents you installed** — a machine that once had Codex and no longer does still has its transcripts.
 - Every detected source is selected by default. Only what you leave selected is imported.
@@ -66,7 +66,18 @@ An agent reads the folder, works out what is in it, uploads what it finds and wr
 - **Files** become artifacts on the chosen anchor, deduplicated by content.
 - **References stay references.** An artifact recorded as a pointer to bytes you keep elsewhere is never silently turned into an upload.
 - **A GitHub checkout is recognised.** Backfill checks your existing GitHub integration's access, uses bounded commit history as context, and reuses or attaches the corresponding code source after placement review.
-- **File and Git reconstruction drafts are saved for explicit publication review** — the agent's reading of the folder is a draft, not a published document. Refreshing the AI summary is a separate step again.
+- **File and Git reconstruction drafts are saved for explicit publication review** — the agent's reading of the folder is a draft, not a published document.
+- **The import writes each project's description and its own block on the project's Overview page.** Nothing generates the rest of the page afterwards: a project's [summary](/tracking/summaries) is kept by whoever records work on it, your coding agent or the Probe daemon.
+
+### What is left out
+
+The agent leaves out what is not research: code for a shipped product (its web or mobile app, CLI or service, with that product's tests and assets), vendored code, build output and caches. Research code, configs, notebooks, results, logs and checkpoints stay, even inside a product's repository.
+
+The review screen lists each left-out file or folder with its file count and why. Nothing in it is uploaded, and **Change the plan** brings any of it back. Left-out files stay settled when they change, so editing the product does not reopen the import. To have them classified again:
+
+```bash
+probe backfill /path/to/work --review-excluded
+```
 
 ### Resuming, and what is not silently added
 

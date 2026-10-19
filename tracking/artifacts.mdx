@@ -1,13 +1,13 @@
 ---
 title: "Artifacts and files"
-description: "Record files against a run, project, workspace or the team's Shared folder — uploaded or by reference."
+description: "Record files against a run, experiment or project — uploaded or by reference — and read the team's Shared folder."
 icon: "folder"
 ---
 
 An artifact is a file with an **anchor**. The anchor is what makes artifacts useful rather than a dumping ground: it says which question the file belongs to.
 
 ```bash
-probe artifact add $RUN ./final.sif --kind artifact --step 4000
+probe artifact add $RUN ./ckpt/step-4000.safetensors --kind checkpoint --step 4000
 probe artifact add ./dataset.parquet --project folding
 probe artifact add ./figure.png --experiment dockq
 ```
@@ -17,8 +17,10 @@ probe artifact add ./figure.png --experiment dockq
 | run | *positional run id* | Checkpoints, outputs, logs, captured code |
 | experiment | `--experiment` | Something belonging to the question, not one execution |
 | project | `--project` | Reference material, figures |
-| workspace | `--workspace` | Read-only: older files, listed, downloaded and deleted, never added to |
-| shared | `--shared` | Read-only, except team datasets: see below |
+
+`--kind` (run anchor only) is one of `checkpoint`, `dataset`, `evaluation`, `code` or `other`; any other word is filed as `other` and kept as its label. Omitted, a `ckpt`, `safetensors`, `pt` or `pth` file is a `checkpoint` and anything else `other`.
+
+Workspaces hold projects, never files: the workspace file anchor was retired on 2026-10-17, and a file you add lives on a run, experiment or project. The team's Shared folder (below) takes team datasets only.
 
 <Tip>
   Data a run trained on, and data a pipeline produced, belongs in the team's [datasets](/tracking/datasets): named, versioned and linked to the runs that made and used it.
@@ -34,7 +36,7 @@ Not everything should be uploaded. Probe records three postures, and never silen
 
 <AccordionGroup>
   <Accordion title="Upload (default)" icon="cloud-arrow-up">
-    The bytes go to object storage, content-addressed and deduplicated by SHA-256 across runs.
+    The bytes go to object storage, content-addressed and deduplicated by SHA-256 across runs. Code (`--kind code`, or a word filed as code such as `script`) is always uploaded: `--reference` on code uploads the bytes anyway and says so.
   </Accordion>
   <Accordion title="Reference a local path" icon="link">
     ```bash
@@ -75,13 +77,14 @@ The file's extension is kept whatever you pass. Say what the file *is* in the ru
 ## Versions
 
 ```bash
-probe artifact version-add <name> ./final-v2.sif
-probe artifact versions <name>
-probe artifact versions <name> --requirement ">=2"
-probe artifact pin-impact <name>          # which projects and experiments pin these versions
+probe artifact versions <artifact-id>
+probe artifact version-add <artifact-id> --from-artifact <other-id>   # promote another file's bytes, zero-copy
+probe artifact version-add <artifact-id> --uri s3://bucket/ckpt-v2.pt --sha256 <hex> --label prod
+probe artifact pin-impact <artifact-id>   # which projects and experiments pin these versions
+probe artifact download <artifact-id> --version 2 -o ./v2.pt
 ```
 
-Versions are a **chain**, matched on monotonic integers and labels — not semver. `">=2.0"` is rejected rather than silently matching nothing.
+Versions are a **chain** of immutable, content-addressed versions behind one file. Immutability belongs to the version, so renaming or moving the file never breaks a pin. Appending content identical to the current version is a no-op that returns it, so `version-add` is safe to retry. Run `pin-impact` before deleting anything: it names the work that would break.
 
 <Warning>
 Artifacts do **not** supersede by name. Two artifacts with the same name coexist and are ordered newest-first by creation time. A name carried by more than one shared artifact is an error naming both ids, because the duplication the reuse check exists to prevent has already happened and picking one silently would compound it.
@@ -93,35 +96,40 @@ Artifacts do **not** supersede by name. Two artifacts with the same name coexist
 probe artifact list $RUN
 probe artifact list --project folding
 probe artifact tree $RUN --prefix figures/ --limit 50
-probe artifact download <id> --out ./local.sif
+probe artifact download <id> -o ./local.sif --sha256 <content_hash>
 ```
+
+`download` streams to the file and checks the bytes against `--sha256` when you pass it (the `content_hash` from `probe artifact list`). A checkpoint folder downloads with `--run RUN --checkpoint best|latest -o DIR`.
 
 `tree` returns **one folder level**: the files at that path, plus each child folder with its file count. That is what the dashboard explorer fetches when you expand a folder, so a run with thousands of captured files costs one small answer per folder rather than one enormous answer per run.
 
 ## The team's Shared folder
 
-One per team, distinct from workspaces, and it never holds projects or experiments. Every member sees everything in it. Since CLI 0.253.0 it holds the team's [datasets](/tracking/datasets); its older loose files, and every workspace file, are **read-only**:
+One per team, distinct from workspaces, and it never holds projects or experiments. Every member sees everything in it. Since CLI 0.253.0 it holds the team's [datasets](/tracking/datasets); its older loose files are **read-only**: listed, downloaded and deleted, never added to.
 
 ```bash
 probe shared list
 probe shared download <artifact-id>
-probe shared delete <artifact-id>              # soft delete, recoverable
+probe shared delete <artifact-id>
 ```
 
-Adding a file, a new version or a move between a workspace and Shared (`probe shared add`, `share`, `unshare`, `artifact add --workspace|--shared`) is refused with a 410 that says where the file goes now: a team dataset (`probe dataset add`), or a project or run. Nothing already there was moved or deleted.
+Adding a file, a new version or a move between a workspace and Shared (`probe shared add`, `share`, `unshare`, `artifact add --workspace|--shared`) is refused with a 410 that says where the file goes now: a team dataset (`probe dataset add`), or a project or run.
 
 Shared is also the level artifact **reuse** resolves against — when an agent asks "is there already an official tokenizer for this", it is asking Shared.
 
 ## Housekeeping
 
 ```bash
-probe artifact move <id> --project folding     # change anchor, keep the id
-probe artifact gc-uploads                      # sweep uploads that were never confirmed
+probe artifact move <id> --to project                    # promote up its own run -> experiment -> project chain
+probe artifact move <id> --to project --target folding   # or name the destination, e.g. another project
+probe artifact gc-uploads --older-than 2026-10-01T00:00:00Z   # sweep uploads that were never confirmed
 probe artifact delete <id>
 ```
+
+`move` keeps the file's id. Moving up its own chain needs no `--target`; moving down, or across to another project, does. The server decides which moves it allows and prints its reason when it refuses one.
 
 `gc-uploads` only touches abandoned, never-confirmed uploads. Confirmed artifacts are untouched.
 
 <Warning>
-`probe artifact delete` is permanent and needs a credential with the `delete` scope.
+`probe artifact delete` is **permanent**. Files do not go to the [trash](/tracking/projects#deleting) that holds deleted projects and runs, so there is no restore. It needs a credential with the `delete` scope.
 </Warning>

@@ -1,0 +1,80 @@
+---
+title: "Summaries and Overview pages"
+sidebarTitle: "Summaries"
+description: "The page each project and experiment keeps for teammates: who writes it, how to edit it, how your own blocks stay put, and its history."
+icon: "file-lines"
+---
+
+Every project and every experiment has a **summary**: its Overview page, the one teammates read to catch up. It says what the work is for, what has been found, and what comes next, with charts drawn from the runs' real metrics.
+
+Runs have no summary of their own. An experiment's summary is the write-up of its runs; what a reader should distrust about one run goes in that run's [notes](/tracking/notes).
+
+## Who writes it
+
+The **recorders** write summaries: whoever records the session. That is the Probe daemon's writer when Probe runs beside your agent, or the agent itself when it records inline. Since 2026-10-17 this is how every team's summaries are written; no separate AI job regenerates pages any more. A page written before then stays as it was until a recorder or a person edits it.
+
+A recorder writes a project's first page when it creates the project, then updates the page on a result, a decision or a change of direction. A project or experiment that has no page yet shows "No summary yet." in the dashboard.
+
+## Editing a summary
+
+Summaries use the same checkout, edit, push loop as [notes](/tracking/notes#the-editing-loop):
+
+```bash
+probe summary checkout --project folding          # prints JSON; `path` is your draft
+$EDITOR <the path it printed>
+probe summary push --project folding              # same flag as the checkout
+```
+
+Use `--experiment dockq` instead of `--project` for an experiment's page.
+
+- **Push merges.** If the page moved since your checkout, push merges your edits into it. A conflict is written into the draft and push exits 2: resolve the markers and push again.
+- **Push refuses a broken page.** Exit 1 means Probe refused the text, and the message says why. Your draft keeps your edits either way.
+- **The draft is yours.** Each session gets its own draft file in Probe's state directory (mode 0600), not your working tree. Checking out again replaces it, unless it holds edits you never pushed: then checkout exits 2 and names the draft, and `--steal` replaces it anyway.
+- **An agent loads the page for you.** The first `probe` write a session makes on a project or experiment checks out that page's draft and prints its path, so the agent edits the current page rather than one from memory.
+
+Pass `--directed` on a push when the researcher asked for that write, so the daemon sees it and does not repeat it.
+
+### What the draft holds
+
+The draft is the page as HTML. Ahead of the page sits a `<script type="application/json" data-probe-series>` block that declares its charts. Each chart may name only the runs and metric keys listed in the file at `chartable_path` (in the checkout's JSON), and Probe snapshots the points when you push. A page holds at most 6 charts, each with at most 8 runs and 16 lines. Pages may run no other script.
+
+An older CLI checks out Markdown instead, with each figure and chart shown as a kept block; pushing it back keeps them, so a Markdown-only client never wipes a full page's drawings.
+
+<Note>
+The writing skill the recorders follow ships with the Probe plugins as `write-summary`. It sends agents to the page rules first; push refuses a page that breaks one.
+</Note>
+
+## Your own blocks
+
+Anything a person writes on the page is **theirs**, and no recorder may change it.
+
+- **In the dashboard**, edit the Overview directly. What you change is marked as yours ("Keep"). Any member who can edit the workspace can change or remove a mark, including turning Keep off.
+- **From the CLI**, `--summary` on `probe project set` or `probe experiment set` writes the entity's own block on its page:
+
+  ```bash
+  probe experiment set dockq --summary @DOCKQ.md
+  ```
+
+  It replaces that whole block, so read it first (`probe project get folding --fields document` for a project). The read is rendered back from the page: check that it contains what you meant rather than matching your file byte for byte.
+
+In a checked-out draft each kept block appears between `<!-- kept: hN -->` and `<!-- /kept -->`. Leave those blocks alone: a push that drops one, moves it out of order, or hides it is refused.
+
+## Tables and charts in the Metrics center
+
+The recorders also choose the tables and charts of a project's or experiment's Metrics center. They name runs and metrics; Probe reads every number itself.
+
+```bash
+probe visuals options --experiment dockq     # what may be named, the current list, and a draft
+$EDITOR <the path it printed>
+probe visuals set --experiment dockq         # replace the list with the draft's
+```
+
+`probe visuals set` checks every name against what `options` listed. Exit 2 means the page moved since `options` read it: the current list is printed, so choose again. Exit 1 means the list was refused, with the checker's reason.
+
+## Page history
+
+Every write to a page is a version: a recorder's push, a person's edit, a restore, a tables-and-charts change. The dashboard's history names who wrote each version and how it arrived — `written by Ada via daemon`, `via cli`, `edited by Ada` — so a reader can tell an agent's text from a teammate's. Open any version to read it as it was, with the charts it was written against, and restore it; a restore is a new version, so nothing is lost.
+
+When a session is erased, every page that session wrote rolls back to its newest version from before the session, and edits people made since are put back. A draft checked out before the erasure can no longer be pushed: check out again.
+
+Agents read the same history through the MCP `entity` tool's `summary_history` view.

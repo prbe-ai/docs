@@ -1,32 +1,26 @@
 ---
 title: "Experiments and runs"
-description: "Run detail, lineage, comparison, trajectories, steps, trials and sessions."
+description: "Experiment comparisons and conclusions, run detail, lineage, spans, trials, logs and sessions."
 icon: "flask"
 ---
 
-## The experiment page
+Experiments and runs open inside their project's page: select one in the Overview explorer, or follow any link to it. A link to `/runs/{id}` lands on the run's project with that run selected. A run filed under no project keeps a page of its own.
 
-Overview leads with the question and the generated summary, then the authored Overview document.
+## Experiments
 
-### Runs
+An experiment's header carries its name, an **Experiment** badge, its tags and its question. The center compares its runs, and the context pane holds its **Summary**, **Notes** and **Files**. Its runs are listed under it in the explorer; selecting the experiment shows all of them.
 
-The **Runs** tab is the experiment's run-lineage directory, not just a list. Each family root renders once, followed by its direct children with a `└` marker. Deeper runs stay out of the compact directory and are summarised on their direct child as *(N more child runs under this)*.
+### Conclusion
 
-Families are ordered by newest activity, direct children newest-first. Fifty rows render initially with fifty more revealed at a time — but the **total count covers every run in scope**, including the summarised descendants.
-
-<Note>
-The experiment page has no separate lineage graph. The nested Runs directory *is* the relationship surface, so there is one place to look rather than two that can disagree.
-</Note>
-
-When lineage is malformed, the bad edge is detached without dropping the run from the list, and the warning states only what the snapshot proves: *parent no longer available*, *parent unavailable or outside this project*, *lineage cycle detected*, *run refers to itself as its parent*. These are explanations, not offers to fix anything.
+An experiment can carry a conclusion: its answer to the question. It shows beside the header, under a **Conclusion** heading that names who wrote it (`Conclusion · <name>`). A person or their agent writes it; one written by the retired overview writer reads `Conclusion · AI` until someone replaces it. To add the first one, use the **Add conclusion** flag in the header; the text itself is the edit target after that.
 
 ### Compare
 
-Appears once at least two runs exist. Two views behind one toggle:
+The experiment's runs share one set of charts, with two views behind one toggle:
 
 <Tabs>
-  <Tab title="Line-chart grid">
-    One chart per metric, with an always-visible row of run pills. Each pill keeps that run's stable colour and its selection state; **Show all** / **Show fewer** handles large run sets.
+  <Tab title="Line charts">
+    One chart per metric. Each run keeps a stable colour across every chart, and the legend and the explorer's eye controls hide and show runs across them all. A hidden run stays listed so you can bring it back.
   </Tab>
   <Tab title="Parallel coordinates">
     Scalar config and summary-metric values flattened into axes. Columns whose **present** values are all identical auto-hide — present-versus-missing alone is not variation, so a framework config dump carried by only some runs stays out of the default axes. Hidden constants remain available.
@@ -37,28 +31,33 @@ Appears once at least two runs exist. Two views behind one toggle:
 
 Both views stay mounted across switches, so toggling never drops keyboard focus or discards fetched series.
 
-Compare receives **exact experiment membership only** — not the recursive descendants the Runs directory shows — because comparing a run against its own child is rarely the question.
-
 ### Versions
 
-Frozen experiment versions pin a run set. That is what a citation points at.
+Freezing an experiment pins its run set in an immutable version, which is what a citation points at. Freeze from the CLI or SDK:
 
-## The run page
+```bash
+probe experiment freeze EXPERIMENT_ID
+```
 
-A run has no generated overview; the page opens on **Metrics**.
+## Runs
+
+A selected run's **Metrics** fill the center. RL runs add **Compute** and **Rollouts** views beside it. The other tabs sit in the context pane; Config, Data, Related, Trials and Sessions appear only when the run has something for them:
 
 | Tab | Holds |
 |---|---|
-| Metrics | Charts and stat tiles for every series |
+| Notes | The run's notes |
+| Config | The run's config, key by key |
+| Data | The datasets it used and its starting weights, or what used its outputs. See [Data](/dashboard/data#data-on-a-project-experiment-or-run) |
 | Related | Direct children, when the run has descendants |
-| Files | The run's artifact explorer |
-| Trajectory | Spans: rollouts, turns, tool calls |
 | Trials | Captured Harbor trials |
-| Steps | Per-step records, including non-numeric values |
+| Spans | The run's trajectory: rollouts, turns, tool calls |
+| Logs | What the run printed, streamed while it runs |
 | Sessions | Coding-agent sessions attributed to this run |
-| Notes | The operational note |
+| Files | The run's files |
 
-**Related** counts every loaded child, including descendants summarised below a direct child. Ancestors and the run itself are not listed — the header and breadcrumb already establish that context. A deeper branch does not expand into another mini-tree; its direct child carries the *(N more child runs under this)* label, which keeps three siblings visibly different from a three-deep chain.
+A run has no Summary of its own.
+
+**Related** counts every loaded child, including descendants summarised below a direct child. Ancestors and the run itself are not listed — the header and breadcrumb already establish that context.
 
 ### Steps and diffs
 
@@ -70,7 +69,7 @@ A run has no generated overview; the page opens on **Metrics**.
 
 ## Sessions
 
-A session page carries the transcript and a **digest** — a condensed reading of what the session did. Sessions attributed to a run appear on that run's Sessions tab, which is what keeps "why was this launched" answerable.
+A session page carries the session's full transcript, in order. Sessions attributed to a project or run appear on its **Sessions** tab, which is what keeps "why was this launched" answerable.
 
 ## Refresh behaviour
 

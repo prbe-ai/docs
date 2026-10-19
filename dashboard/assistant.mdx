@@ -1,6 +1,6 @@
 ---
 title: "Assistant"
-description: "Ask questions of your lab's history — and approve every write before it lands."
+description: "Ask questions of your lab's history, and review the changes it proposes."
 icon: "sparkles"
 ---
 
@@ -11,6 +11,8 @@ The Assistant answers questions against everything Probe holds: runs, metrics, n
 The blank route is a centred composer. Open conversations use an auto-growing thread composer that rests at one line, grows, then scrolls internally. Both send on **Enter** and preserve **Shift+Enter** and IME composition.
 
 History lives in a **Chats** rail beside the conversation. Conversations are named by the server one turn in — names are read-only everywhere.
+
+You can also ask from any page: switch the Search / Ask bar at the bottom to **Ask**, and **Open in Assistant** carries the chat here. See [Search and Ask](/dashboard/search).
 
 ## Reading a turn
 
@@ -24,21 +26,34 @@ Each tool row names its purpose **in human language**, keeps result detail secon
 A reloaded call whose live result is no longer in the durable transcript stays status-neutral rather than being reported as failed.
 </Note>
 
-## Writes need your approval
+## What it can do
 
-The Assistant can propose changes. It cannot make them on its own.
+The Assistant reads through the same tools your agents use, and writes by running `probe` CLI commands as you — the whole CLI, less the commands that cannot work or must not run on the server: anything that needs your own computer, credentials and installs, the `/probe` switch, admin settings and reads of the open web.
 
-When a write is pending:
+It deletes only what a dashboard delete button can delete, and the same way:
 
+- Projects, experiments and runs go to the trash, where they stay recoverable for 21 days.
+- Files and metric views are hidden for good; sub-notes, paper links and code links are deleted at once.
+- Deleting a workspace, removing a paper or reference, deleting metric series and deleting Shared files are refused.
+
+A delete's card says what it does. For a project, experiment or run, it also shows what the delete takes with it and when its newest work last changed.
+
+## Changes need your approval
+
+Most writes wait for you. A deployment can let a few low-risk writes run unasked, such as saving a metric view, but **every delete is asked**, and so is every write after the Assistant has read the open web.
+
+When a change is waiting:
+
+- **A review card opens above the composer.** It names the change, describes it in plain words and shows the full command behind it.
 - **The composer goes out of service** and says what it is waiting for. The turn is already finished while it waits, so accepting a message that would land after the decision would read as being ignored.
-- **Approve** and **Deny** sit above it as filled green and red buttons — the loudest things in the footer, because they are the only controls that move the conversation on.
-- They answer to **Enter** and **Backspace** from anywhere that is not itself a text field, and focus moves to Approve when the question appears.
-
-A batch can carry up to twenty-five writes. The reason line and the two controls hold their place and the write detail is what scrolls: the transcript yields space first, then the detail, and the composer is the last thing standing. **Nothing the model puts in that card can make the page itself scroll.**
+- **One change** has **Deny** and **Approve**. **Enter** approves and **Backspace** denies from anywhere that is not a text field or another control, and focus moves to **Approve** when the card appears.
+- **Several changes** (up to twenty-five) get a tab each, with a counter of how many you have reviewed. Choose **Deny this** or **Approve this** on each, then **Apply** the approved ones — only those run. **Approve all** approves the whole batch at once.
 
 <Warning>
-Read the batch before approving it. A twenty-five-write batch is twenty-five decisions, and approval is one keystroke.
+Read the batch before approving it. A twenty-five-change batch is twenty-five decisions, and **Approve all** is one click.
 </Warning>
+
+When a write finishes, the dashboard refreshes the records it touched, so an updated description appears without reloading the page.
 
 ## What it can reach
 

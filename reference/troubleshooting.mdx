@@ -18,7 +18,7 @@ If you would rather have the report alone, or need it in a script:
 probe doctor
 ```
 
-Read-only either way. It prints versions, install method, account, plugin status, capture status and credential source, agent rules, team-note sync, auto-update with its **last attempt**, and the outbox.
+Read-only either way. It prints versions, install method, account, plugin status, capture status and credential source, the Probe daemon, agent rules, team-note sync, auto-update with its **last attempt**, and the outbox. A component marked `UPDATE NEEDED` says what breaks until you update it.
 
 ## "My run recorded nothing"
 
@@ -54,7 +54,9 @@ Read-only either way. It prints versions, install method, account, plugin status
     probe session status
     ```
 
-    Returns the full decision: the state, which default applied, and whether the capture daemon is running. `/probe read` records nothing by design.
+    Returns the full decision: the state, which default applied, and whether session capture is running. `/probe read` records nothing by design.
+
+    Where [the Probe daemon](/agents/daemon) records, `probe daemon status` says whether it is running, and `probe companion log` lists every decision it made in the session and why.
   </Accordion>
 
   <Accordion title="Check the run actually closed" icon="flag-checkered">
@@ -102,10 +104,11 @@ probe doctor            # "Credential from" and the capture status
 probe session status    # the capture block: running, pid, reason
 ```
 
-To re-pair it, toggle **Session capture** off and on again in the wizard's [Settings](/wizard/settings) — that clears the credential and the killswitch together and authorizes the device afresh, which is what a half-configured pairing needs.
+To re-pair it, turn capture off and on again — that clears the credential and the killswitch together and authorizes the device afresh, which is what a half-configured pairing needs.
 
 ```bash
-npx probe-research --action settings
+probe wizard --no-capture --yes
+probe wizard --capture --yes
 ```
 
 <Warning>
@@ -164,9 +167,9 @@ probe notes team
 probe notes sync
 ```
 
-## "A tool the docs mention is not in my agent"
+## "probe refuses my agent's write"
 
-`probe_procedures` and the `/set-rule` skill are behind a per-user rollout flag, and plugin content cannot vary per user — so on accounts outside the rollout they are simply absent. That is the gate working.
+Where the Probe daemon records, the `probe` CLI refuses the agent's own writes: the daemon's writer records the session. A write you asked for goes through when the agent marks it `--directed`; anything else goes to the writer with `probe ask --writer "<request>"`. `/probe inline` hands recording back to the agent for the session. See [The Probe daemon](/agents/daemon).
 
 ## Still stuck
 

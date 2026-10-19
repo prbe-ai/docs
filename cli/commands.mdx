@@ -15,34 +15,39 @@ Run `probe <group> --help` for the flags on any of these.
 | Command | Does | In the wizard |
 | --- | --- | --- |
 | `probe wizard` | The [setup wizard](/wizard/overview): install, update, sign in and out, accounts, uninstall | — |
-| `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works | **Diagnose a problem** |
+| `probe doctor` | Read-only diagnostic: what is installed, on, and whether auto-update works. `--fix` turns retired folder defaults into `.probe.config` files | **Diagnose a problem** |
 | `probe whoami` | The current principal | the **On this device** block |
-| `probe context` | `list` · `show` — named local accounts | **Account** switches and removes them |
+| `probe context` | `list` · `show` · `use` · `delete` — named local accounts | **Account** switches and removes them |
 | `probe token` | `list` · `create` · `revoke` | none — minting needs a browser |
-| `probe mcp` | `status` · `headers` · `env` | the read token is minted at sign-in |
+| `probe mcp` | `status` · `headers` · `env` · `token set` · `token unset` | the read token is minted at sign-in |
+| `probe feedback send` | Send the Probe team feedback about Probe. Nothing is sent until you say yes | — |
 
 ## Structure
 
 | Command | Does |
 |---|---|
-| `probe workspace` | `list` · `get` · `create` · `rename` · `delete` · `use` · `writers` |
-| `probe project` | `create` · `list` · `get` · `set` · `use` · `tag` · `move` · `delete` · `reference` · `code` · `contributors` |
-| `probe experiment` | `create` · `get` · `set` · `list` · `tag` · `freeze` · `reproduce` · `edges` · `delete` |
+| `probe workspace` | `list` · `get` · `create` · `rename` · `delete` · `use` · `writers`. `use` sets this computer's workspace, where new projects made here go |
+| `probe project` | `create` · `list` · `get` · `set` · `use` · `tag` · `move` · `delete` · `lineage` · `reference` · `code` · `contributors` |
+| `probe experiment` | `create` · `fork` · `get` · `set` · `list` · `move` · `freeze` · `reproduce` · `inherited` · `edges` · `lineage` · `delete` |
 | `probe group` | `create` · `list` · `get` · `set` — sweeps, ensembles, distributed runs |
 | `probe version` | `create` · `list` — immutable experiment version manifests |
 | `probe access-group` | `list` · `create` · `rename` · `delete` · `add` · `remove` |
 | `probe commits` | One page of a project's commit timeline, newest first |
 
+`probe project delete`, `probe experiment delete` and `probe run delete` move what they delete to a trash that Probe support can restore for 21 days. `--dry-run` prints what would move, and moves nothing.
+
 ## Runs
 
 | Command | Does |
 |---|---|
-| `probe run` | `start` · `fork` · `child` · `set` · `list` · `tag` · `end` · `check` · `reproduce` · `get` · `series` · `metrics` · `delete` |
+| `probe run` | `start` · `fork` · `child` · `set` · `move` · `list` · `tag` · `expect` · `end` · `check` · `reproduce` · `get` · `series` · `metrics` · `inputs` · `upstream` · `delete` |
 | `probe exec` | Run a command under a run, holding it with a heartbeat. `--input` / `--output` name the files a non-Python step reads and writes, so they are hashed for lineage |
 | `probe get` | Print a run |
 | `probe bundle` | Print a run bundle: run, series and artifacts |
 | `probe events` | Backend lifecycle events for a run |
 | `probe link` | Attach foreign keys under `metadata.foreign_keys` |
+
+`probe run expect` declares the range a metric should stay in, and Probe emails the run's creator the first time a value leaves it. `probe run inputs` lists the files a run read; `probe run upstream` walks back to what it built on.
 
 ## Telemetry
 
@@ -52,7 +57,7 @@ Run `probe <group> --help` for the flags on any of these.
 | `probe metrics` | `grouped` · `wide` · `export` · `plot` · `backfill` · `delete` |
 | `probe series` | `latest` — cross-run scalar summary |
 | `probe coordinates` | The run's coordinate catalog |
-| `probe views` | `list` · `show` · `create` · `preview` · `data` · `rename` · `delete` |
+| `probe views` | `list` · `show` · `create` · `preview` · `data` · `rename` · `update` · `delete` |
 | `probe span` | `add` · `list` · `get` |
 | `probe trial` | `list` · `get` · `set` · `add` · `stage` · `reconcile` · `export` · `drain` · `watch` · `expand` |
 | `probe edge` | `add` · `remove` — lineage |
@@ -62,30 +67,52 @@ Run `probe <group> --help` for the flags on any of these.
 | Command | Does |
 |---|---|
 | `probe artifact` | `add` · `list` · `tree` · `move` · `download` · `versions` · `version-add` · `pin-impact` · `gc-uploads` · `delete` |
-| `probe shared` | `list` · `download` · `delete` — the older team files are read-only; `add` · `share` · `unshare` are retired |
+| `probe shared` | `list` · `download` · `delete` — the older team files are read-only. `add` · `share` · `unshare` are still in the CLI, but the server refuses them (410): new team data goes in as a [dataset](/tracking/datasets) |
 | `probe dataset` | `add` · `use` · `list` · `show` · `download` — the team's [datasets](/tracking/datasets) |
 | `probe source` | `add` · `list` · `show` — where outside data came from |
 | `probe checkpoint` | `list` · `use` — every checkpoint, team-wide |
 | `probe provenance` | Where a dataset or checkpoint came from (`--down`: what used it; `--steps`: the methods section) |
+| `probe file preview` | A local data file's shape and first rows (CSV, JSON, Parquet, NumPy), without running anything. Never opens a pickle |
 | `probe snapshot` | Non-disruptive code and environment capture |
 | `probe snapshot-show` | The captured code manifest, one file per line |
 | `probe snapshot-restore` | Rebuild the captured tree, or say exactly what is missing |
+| `probe snapshot-prune-refs` | Delete the `refs/probe/snapshots/*` git refs that earlier Probe versions wrote |
 
 ## Prose
 
 | Command | Does |
 |---|---|
-| `probe notes` | `show` · `checkout` · `push` · `write` · `list` · `create` · `rename` · `delete` · `status` · `team` · `sync` · `audit-advisory` |
-| `probe paper` | `add` · `list` · `update` · `tag` · `edges` · `remove` |
-| `probe rule` | `preview` · `declare` · `publish` · `list` — workflow memory |
+| `probe summary` | `checkout` · `push` — a project's or experiment's summary (its Overview page) as a local file: check it out, edit it, push it. A push onto a page that moved meanwhile merges. See [Summaries](/tracking/summaries) |
+| `probe visuals` | `options` · `set` — the tables and charts of a project's or experiment's Metrics center. `options` writes the current list and what it may name to a file; `set` sends the edited list |
+| `probe draft edit` | Replace one exact piece of a checked-out summary or note draft. The change comes on stdin |
+| `probe notes` | `show` · `checkout` · `push` · `write` · `append` · `edit` · `list` · `create` · `rename` · `delete` · `status` · `team` · `sync` · `audit-advisory` |
+| `probe paper` | `add` · `list` · `update` · `tag` · `edges` · `remove` · `citations` · `graph` · `find` |
 | `probe agent-rules` | `refresh` — the managed Probe block in your agent's memory file |
+
+`probe paper find` searches and reads 40M+ abstracts (arXiv, PubMed, bioRxiv, medRxiv): `--mode read --paper-id arxiv:<id> --query "<question>"` returns the passages of one paper that answer a question.
 
 ## Sessions
 
 | Command | Does |
 |---|---|
-| `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default --folder` |
-| `probe statusline` | `status` · `show` — Install adds it, Uninstall removes it |
+| `probe session` | `state` · `track` · `untrack` · `toggle` · `status` · `default` · `parent` · `export` |
+| `probe statusline` | `install` · `uninstall` · `status` · `show` — Install adds it, Uninstall removes it |
+| `probe ignore check` | A path's [`.probe.config`](/agents/probe-config) level and the line that set it |
+
+`probe session default` shows or sets the machine's default for new sessions (`on`, `read` or `off`). `probe session export <id>` prints a captured session as one ATIF trajectory document, readable by Harbor, Phoenix and Transluce.
+
+## The Probe daemon
+
+See [The Probe daemon](/agents/daemon).
+
+| Command | Does |
+|---|---|
+| `probe ask "<question>"` | Ask the daemon about the team's prior work. Returns at once; the answer arrives later as a `[Probe]` message. `--wait` waits for it; `--writer` asks the daemon's writer to change the record |
+| `probe approvals` | The questions the daemon is holding for you, answered y/n in a terminal (`--list` only lists), then the shell commands it ran on Jev's yes in the last day |
+| `probe deny <id>` | Say no to a question the daemon holds. `--why` says why |
+| `probe daemon status` | Whether the daemon can run here, and what it is doing |
+| `probe daemon install` | Install the daemon's AI libraries into this CLI's environment |
+| `probe companion` | `log` · `trace` · `report` · `feedback` — every decision the daemon made in a session and why, what it sent its model, what it wrote, and a correction it reads on its next cycle |
 
 ## Capy
 
@@ -117,9 +144,9 @@ Flags for `probe capy connect`:
 
 | Command | Does |
 |---|---|
-| `probe backfill` | Import work you have already done: point an agent at a folder |
+| `probe backfill` | Import work you have already done: point an agent at a folder. `--review-excluded` re-checks files an earlier import left out as not research |
 | `probe wandb` | `discover` · `import-local` · `import-hosted` · `key` |
-| `probe import wandb` | Mirror one W&amp;B run's metric history into an existing run |
+| `probe import wandb <entity/project/run_id> --run <run>` | Mirror one W&amp;B run's metric history into an existing run |
 
 ## Delivery
 
@@ -127,11 +154,8 @@ Flags for `probe capy connect`:
 |---|---|
 | `probe outbox` | `status` · `drain` · `watch` · `retry` · `discard` · `pause` · `resume` |
 | `probe flush` | Deliver everything queued and wait (alias of `outbox drain`) |
+| `probe sync` | Deliver runs recorded with `PROBE_MODE=offline`, with the current sign-in |
 
 <Card title="The outbox" icon="inbox" href="/cli/outbox">
   What queues, what blocks, and what to do when delivery fails.
 </Card>
-
-## Reserved
-
-`probe hook session attach` / `checkpoint` / `detach` exists for deterministic coding-agent adapters and is not part of the researcher workflow. No hooks are installed by the current release.

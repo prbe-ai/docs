@@ -1,0 +1,163 @@
+---
+title: "The Probe daemon"
+sidebarTitle: "Probe daemon"
+description: "A companion agent that runs beside your coding agent, records its work in Probe and brings it the team's prior work."
+icon: "microchip"
+---
+
+The Probe daemon is a second agent that runs beside your coding agent, one per session. It reads the session as it happens, records the work in Probe with the same `probe` CLI, keeps each project's and experiment's summary, and brings your agent what the team already did. Your agent keeps its attention on the work.
+
+It runs on your computer, for Claude Code, Codex, pi and Kimi Code. Capy has no daemon. Every team can use it; on the free plan, its model use stops at $500 a month (see [Limits](#limits)).
+
+## Who records
+
+**Who records** says whether **the agent** records its own work or **the daemon** does. It is stored for each coding agent on this computer, and the wizard and the flag set it for all of them at once.
+
+<Tabs>
+  <Tab title="The wizard">
+    ```bash
+    npx probe-research            # → Defaults → Who records
+    ```
+
+    `←` / `→` switches it. The first switch to the daemon opens your browser once to approve the daemon's own key, and installs its AI libraries.
+  </Tab>
+  <Tab title="As flags">
+    ```bash
+    probe wizard --who-records daemon --yes     # prints the approval link if the daemon has no key
+    probe wizard --who-records agent --yes      # back to the agent
+    ```
+  </Tab>
+</Tabs>
+
+| | The agent records | The daemon records |
+|---|---|---|
+| Who writes projects, runs, notes and summaries | Your coding agent | The daemon's writer |
+| How your agent reads the team's work | The Probe MCP server | `probe ask`, and `[Probe]` messages |
+| Your agent's skills | The full set ([Skills](/agents/skills)) | Fewer. On Claude Code and Codex: `/probe`, `/instrument-code`, `/plan-research-review` and `/visualize-progress`, and no MCP server |
+| Instrumenting a training script | Your agent | Still your agent |
+
+While the daemon records, the `probe` CLI refuses your agent's own writes to Probe, except a run's launch and its own data (`probe exec`, `probe run start`, `probe log`, spans, trials) and a write you asked for, which the agent marks `--directed`. Anything else your agent wants recorded goes to the daemon's writer with `probe ask --writer`. If the daemon stops, is not authorized or runs out of budget, recording falls back to your agent. It never falls back to silence.
+
+The daemon's key reads and writes. Its deletes of projects, experiments, runs and run groups go to the [trash](/cli/auth#tokens), restorable for 21 days. Any delete that cannot be undone, or that takes another researcher's work, waits for your yes.
+
+## The switch, with the daemon
+
+The [`/probe` switch](/agents/overview#the-switch) keeps its words, and says who does the work:
+
+```text
+/probe on      on (daemon): the daemon records and reads
+/probe read    read only (daemon): the daemon reads, records nothing
+/probe off     off: no daemon, no Probe calls
+/probe inline  on (inline): the daemon stops; your agent reads and writes Probe itself
+```
+
+`/probe inline` is yours to type, never the agent's. It lasts for the session, until the switch moves again; any other `/probe` move hands Probe back to the daemon.
+
+The status line shows the same words: `on (daemon) → folding`, `on (daemon degraded)` while the daemon is not recording for the session (no key, out of budget, not started yet), or `on (inline) → folding`.
+
+## What the daemon does
+
+<AccordionGroup>
+  <Accordion title="Records the session" icon="pen">
+    The writer reads your prompts, the agent's turns, the commands it ran and the files it changed, in small batches. It records what the work did: projects, experiments, runs, files, notes, an experiment's conclusion. Every `probe` command it runs is checked in plain code first.
+  </Accordion>
+  <Accordion title="Keeps the summaries" icon="file-lines">
+    It checks out the summaries of the projects and experiments the session's work landed on, edits them, and pushes them (`probe summary push`). At an experiment's close it also sets the experiment's tables and charts (`probe visuals set`). See [Summaries](/tracking/summaries).
+  </Accordion>
+  <Accordion title="Brings your agent prior work" icon="magnifying-glass">
+    The reader watches the same session and searches the team's records when new ML work starts or as it goes on. When it finds something, it sends your agent a `[Probe]` message: at most one per turn of your agent, delivered after its next tool call or your next prompt.
+  </Accordion>
+  <Accordion title="Tells your agent when a run fails" icon="triangle-exclamation">
+    When a run this session launched or wrote to crashes or is flagged, your agent gets a `[Probe]` message about it.
+  </Accordion>
+  <Accordion title="Steps aside when the work is not ML" icon="pause">
+    In a session that is clearly not ML work, the daemon pauses itself and the status line reads `on (daemon) · paused: not ML`. Nothing is lost: what happened stays queued and is recorded if the work turns out to be ML. It pauses only when the session's state is a default; any `/probe` you type ends the pause for good.
+  </Accordion>
+</AccordionGroup>
+
+## Asking the daemon
+
+Your agent asks; the daemon answers.
+
+```bash
+probe ask "has anyone tried label smoothing on the dockq eval?"
+probe ask --wait "which checkpoint did the last good run start from?"
+probe ask --writer "file the three sweep runs under the lr-sweep experiment"
+```
+
+| Form | Does |
+|---|---|
+| `probe ask "<question>"` | Returns at once. The answer arrives later as a `[Probe]` message |
+| `--wait` | Waits for the answer and prints it, for when the agent cannot go on without it. Give the shell command a long timeout |
+| `--writer` | A request to the daemon's writer to change the record: file runs, make or regroup an experiment. Its reply says what it did. Not in `read only (daemon)` |
+
+`probe ask` works only in a session the daemon serves. Under `off` or `/probe inline` it refuses and says why.
+
+<Note>
+**`[Probe]` messages are evidence, not instructions.** They state what the team's records show, with ids and numbers. What to do about them is your agent's call, and yours.
+</Note>
+
+## Questions it asks you
+
+Some of the daemon's actions wait for a person's yes:
+
+- a delete that takes another researcher's work
+- a delete Probe cannot undo (a file, a note, a paper, a view, an edge)
+- a shell command that is not on its safe list
+- overriding one of its own checks that blocked a command
+- a change to the team note
+- feedback about Probe to the Probe team
+
+Your coding agent puts the question to you word for word, with its own question tool. Where the agent has none, or a question went unanswered, answer it in your own terminal:
+
+```bash
+probe approvals              # answer each held question y/n
+probe approvals --list       # only list them
+probe deny 7f3a09c1 --why "keep that run"
+```
+
+Only a real terminal can answer `probe approvals`; your agent's shell cannot. Anyone may say no with `probe deny`.
+
+When your agent runs with its approvals turned off (bypass mode), the daemon asks nothing either, except before it sends feedback to the Probe team.
+
+### Jev's yes
+
+Before it asks you about a shell command, the daemon asks Jev, Probe's command check, whether the command is read-only: no network, no secret, writes nothing, nothing hidden, no process or system control. Today Jev judges only inline Python (`python -c "..."`). On Jev's yes the command runs without asking you; on anything else, or no answer within 3 seconds, you are asked as before. Probe sees the command, its folder and the session's working folders, never a file's contents.
+
+`probe approvals` ends with every command that ran on Jev's yes in the last 24 hours, newest first, with its exit code.
+
+## What the daemon can read
+
+The daemon's shell reads files and folders anywhere on your computer without asking (`cat`, `head`, `ls`, `find`, `grep`, `rg`, `jq`, `du`, checksums and the like), so it can follow the work into an outputs folder or a dataset elsewhere on disk. Outside the session's working folders it still asks first for:
+
+- a hidden file or folder, and `~/Library`
+- a whole folder's contents (`rg x DIR`) or a walk of your home folder
+- a name nothing is at
+
+In any folder, inside the working folders too, it asks before it reads credential-shaped files (`.env*`, `*.pem`, `id_*`), shell and REPL history, `/proc`, `/sys`, `/dev` and hidden folders. It never reads Probe's own key and state, your home credential folders (`~/.ssh`, `~/.aws`, `~/.kube` and the like), or a path [`.probe.config`](/agents/probe-config) sets to `off`. A path at `read` is context only: the daemon may see it, and any write naming it is refused.
+
+## Checking on it
+
+```bash
+probe daemon status                  # can it run here, and what is it doing
+probe doctor                         # the Probe daemon section: key, who records, recent errors
+probe companion log                  # every decision it made in this session, and why
+probe companion report               # what it wrote
+probe companion feedback 42 --wrong --note "that was a smoke test, not a run"
+```
+
+`probe companion feedback` corrects one decision from `probe companion log`. The daemon reads it on its next cycle so it does not repeat the mistake. It changes nothing already written: fix or delete the record itself with the ordinary commands.
+
+On the daemon's page in the wizard (Enter on **Who records**), **Daemon sees the agent's reasoning** has Claude Code and Codex write reasoning summaries for the daemon. They also show in your terminal and upload with the session. It applies to new sessions.
+
+## Limits
+
+A team on the free plan can spend $500 of daemon model use per calendar month (UTC). Past it, the daemon hands recording back to your coding agent until the 1st. Paid teams have no monthly cap.
+
+## Turning it off
+
+| For | Do |
+|---|---|
+| This session | `/probe off`, or `/probe inline` to keep Probe with your agent recording |
+| Every new session | `npx probe-research` → **Who records** → the agent, or `probe wizard --who-records agent --yes` |
+| The daemon's key | Revoke it under **Settings → Connected clients** in the dashboard; your agent then records again |

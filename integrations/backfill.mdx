@@ -11,7 +11,7 @@ Backfill is the no-connector path: it reads a folder on this machine, works out 
 <Tabs>
   <Tab title="Wizard">
     ```bash
-    npx probe-research            # → Your research → Import research work
+    npx probe-research            # → Backfill → Import research work
     ```
 
     The wizard is the better door for this, and not only because it has screens. It runs the import **in the background**, so a large folder does not hold your terminal; it survives a disconnect and resumes after a restart; and it shows you the plan before anything uploads.
@@ -66,7 +66,19 @@ Both doors share the same file-coverage records and delivery receipts, so **comp
 
 Folder imports either review placement before writing, or use the explicit automatic-approval option — which is never selected for you.
 
-File and Git reconstruction drafts are saved for **explicit publication review**, and refreshing the AI summary is a separate step again. The agent's reading of your folder is a draft until you say otherwise.
+File and Git reconstruction drafts are saved for **explicit publication review**. The agent's reading of your folder is a draft until you say otherwise.
+
+The import writes each project's description and its own block on the project's Overview page. No later step generates the rest of the page: a project's [summary](/tracking/summaries) is kept by whoever records work on it, your coding agent or the Probe daemon.
+
+## What is left out
+
+Not everything in a folder is research. The agent leaves out code for a shipped product (its web or mobile app, CLI or service, with that product's tests and assets), vendored code, build output and caches; research code, configs, notebooks, results, logs and checkpoints stay, even inside a product's repository. The review lists each left-out row with its file count and why, and nothing in it is uploaded.
+
+Left-out files are recorded as excluded and stay settled when their bytes change. To classify them again:
+
+```bash
+probe backfill /path/to/work --review-excluded
+```
 
 ## Resuming
 
@@ -74,6 +86,7 @@ File and Git reconstruction drafts are saved for **explicit publication review**
 probe backfill /path/to/work --source-id <id>       # the folder moved, same destination
 probe backfill /path/to/work --import-changed       # review files that changed since
 probe backfill /path/to/work --import-unverified    # review unresolved legacy matches
+probe backfill /path/to/work --retry-dead           # plan files again that failed every attempt
 ```
 
 Rerun to resume. Coverage of current files is reported **separately** from pending delivery, so "we read everything" and "everything arrived" are never conflated.

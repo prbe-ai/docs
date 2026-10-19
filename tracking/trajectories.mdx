@@ -12,15 +12,15 @@ A span is a named, typed interval inside a run: a rollout, a turn, a tool call, 
 
 <CodeGroup>
 ```python SDK
-with probe.span("rollout", name="rollout-0", step=1) as rollout:
-    with rollout.span("turn", name="turn-1"):
+with probe.span("rollout", name="rollout-0", step_index=1):
+    with probe.span("turn", name="turn-1"):   # nests under the open rollout span
         ...
 ```
 
 ```bash CLI
 probe span add $RUN --type rollout --name rollout-0 --step 1
 probe span list $RUN
-probe span get $RUN <span-id>
+probe span get <span-id>
 ```
 </CodeGroup>
 
@@ -37,11 +37,13 @@ A run bundle carries span *type counts* only, not the spans themselves. To read 
 Inside the SDK, a unit binds coordinates and labels for everything logged within it. Nested units merge, with the child winning per key.
 
 ```python
-with probe.unit(dimensions={"rank": 0}):
-    probe.log({"loss": 0.42}, step=1)          # carries rank=0
-    with probe.unit(labels={"example_id": "x1"}):
-        probe.log({"reward": 1.0}, step=1)     # carries rank=0 and example_id=x1
+with run.unit(coords={"rank": 0}):
+    run.log({"loss": 0.42}, step=1)            # carries rank=0
+    with run.unit(labels={"example_id": "x1"}):
+        run.log({"reward": 1.0}, step=1)       # carries rank=0 and example_id=x1
 ```
+
+`coords` are the bounded grouping axes a metric's `dimensions` hold; never put a per-sample id there. A key may not end up in both maps.
 
 ## Harbor trials
 
@@ -51,8 +53,8 @@ A trial is one rollout's on-disk output: the trajectory, the result, the files i
 probe trial add $RUN jobs/my-job/trials/swe-fix__x1 --step 600 --env-type skypilot-fork
 probe trial add $RUN <dir> --step 601 --no-expand        # raw capture, no expansion
 probe trial list $RUN
-probe trial get $RUN <trial>
-probe trial set $RUN <trial> --name "swe-fix x1" --description "passes after retry"
+probe trial get <trial-id>          # the trial's rollout span id
+probe trial set <trial-id> --name "swe-fix x1" --description "passes after retry"
 ```
 
 One capture produces a rollout span, a reward metric, labeled file uploads, and a `kind=harbor_trial` manifest — all keyed by `--step`. A recognised trajectory format (ATIF v1.x is built in) also expands into `turn` and `tool_call` spans under the rollout span.
@@ -81,7 +83,7 @@ probe trial export /shared/probe/trial-601/export-request.json
 probe trial drain  /shared/probe/captures
 probe trial drain  /shared/probe/captures --run "$PROBE_RUN_ID"
 probe trial watch  /shared/probe/captures --interval 5
-probe trial reconcile $RUN
+probe trial reconcile $RUN /shared/probe/trial-601
 ```
 
 Staging keeps an atomic `.probe-capture.json` beside the durable bytes. Its **collection** status is tracked separately from **upload** status, so an exporter outage leaves a precise, retryable list of unconfirmed files rather than losing their paths.

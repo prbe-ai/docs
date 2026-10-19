@@ -1,6 +1,6 @@
 ---
 title: "Projects and experiments"
-description: "Create, organise, tag, nest and freeze the structures runs live in."
+description: "Create, organise, tag, nest, freeze and delete the structures runs live in."
 icon: "folder-tree"
 ---
 
@@ -14,43 +14,53 @@ probe project get folding
 probe project use folding             # make it the default for run start and friends
 ```
 
-A project declares a **kind** from a closed vocabulary — `training`, `inference`, `research`, `general`. The kind decides how the project's page is laid out, and nothing else; it never restructures an experiment or a run.
+A new top-level project is filed in this computer's workspace: the one `probe workspace use` set (the setup wizard asks for it), `PROBE_WORKSPACE`, or `--workspace` for one call. On a team with several workspaces and none set, the create is refused rather than guessed. A subproject always lives in its parent's workspace.
+
+A project declares a **kind** from a closed vocabulary — `training`, `evaluation`, `research`, `general`. The kind decides how the project's page is laid out, and nothing else; it never restructures an experiment or a run.
 
 | Kind | Use it for |
 |---|---|
 | `training` | Work where model weights move |
-| `inference` | Frozen-weight work: sweeps, ablations, evaluation runs |
-| `research` | Document-shaped investigation — lit reviews, design, theory. Leads with Papers |
+| `evaluation` | Frozen-weight work: sweeps, ablations, evaluation runs |
+| `research` | Document-shaped investigation — lit reviews, design, theory. Shows its papers in the Overview |
 | `general` | Miscellaneous work. A real declared choice, not a fallback |
 
 <Note>
-A sweep over a frozen model is an **experiment inside an inference project**, not a project of its own. Reaching for a new project every time is how a workspace becomes unreadable.
+A sweep over a frozen model is an **experiment inside an evaluation project**, not a project of its own. Reaching for a new project every time is how a workspace becomes unreadable.
 </Note>
+
+`inference` is the old name of `evaluation`. An older client that still sends `inference` gets a project stored as `evaluation`.
 
 ### Display fields
 
 ```bash
 probe project set folding --name "Protein folding" --description "DockQ studies"
-
-# The Overview document: read, edit, write, verify.
-probe project get folding | jq -r '.summary_markdown // ""' > PROJECT.md
-$EDITOR PROJECT.md
-probe project set folding --summary @PROJECT.md
-probe project get folding | jq -r '.summary_markdown // ""'
+probe project set folding --add-tag dockq --remove-tag draft
 ```
 
-`--summary` is **whole-document and last-write-wins**, so always read first and verify after. A line containing only `[README](https://github.com/owner/repo)` embeds that repository's README at that point.
+### The Overview page
+
+Every project and experiment has an **Overview**: the page teammates read to catch up. The agents that record your sessions write it. See [summaries](/tracking/summaries) for who writes it, how to edit it with `probe summary checkout` and `push`, and how a block of your own stays put.
+
+`--summary` writes the project's own block on that page, which no agent may rewrite:
+
+```bash
+probe project get folding --fields document     # the block, as the page holds it now
+probe project set folding --summary @PROJECT.md
+```
+
+`--summary` replaces **that whole block**, so read it first. The read is rendered back from the page, so check that it *contains* what you meant rather than matching your file byte for byte. A line containing only `[README](https://github.com/owner/repo)` embeds that repository's README at that point.
 
 ### Nesting and lateral links
 
 ```bash
-probe project create folding-phase2 --parent folding     # a SUBPROJECT
+probe project create folding-phase2 --kind training --parent folding   # a SUBPROJECT
 probe project move folding-phase2 --parent folding       # or move one later
 probe project move folding-phase2 --top-level
 probe project move folding-phase2 --workspace engineering
 ```
 
-A phase of a bigger effort is a subproject of it — never a new top-level sibling.
+A phase of a bigger effort is a subproject of it — never a new top-level sibling. A workspace move applies to a top-level project; a subproject follows its root.
 
 When the relation is not containment, use a **reference** instead:
 
@@ -58,17 +68,17 @@ When the relation is not containment, use a **reference** instead:
 probe project reference add lit-review --to folding
 ```
 
-Use it when a review informed a training run, or two efforts share a method — the relation `--parent` would claim wrongly. Cycles and any depth are fine.
+Use it when a review informed a training run, or two efforts share a method — the relation `--parent` would claim wrongly. It is directed: adding A→B does not add B→A.
 
 ### Attached code
 
 ```bash
 probe project code list folding
-probe project code attach folding --repo owner/name
+probe project code attach folding owner/name --reason "the runs' code snapshots name this remote"
 probe commits folding                  # one page of the commit timeline, newest first
 ```
 
-The timeline is read **through** GitHub by the backend. Nothing is mirrored, so attaching is cheap and detaching loses nothing.
+The timeline is read **through** GitHub by the backend. Nothing is mirrored, so attaching is cheap and detaching loses nothing. Attaching grants no access: the repository must be public or covered by the team's GitHub App installation.
 
 ### Who worked on it
 
@@ -81,16 +91,18 @@ probe project contributors folding
 An experiment is one question and the runs that answer it.
 
 ```bash
-probe experiment create dockq --question "does temperature 0.7 win?" --project folding
-probe experiment list --project folding --tag baseline
+probe experiment create dockq --question "does temperature 0.7 beat 1.0 on DockQ?" --project folding
+probe experiment list --project folding
 probe experiment get dockq
-probe experiment set dockq --name "DockQ sweep" --description "Temperature sweep"
-probe experiment set dockq --summary @EXPERIMENT.md
+probe experiment set dockq --name "DockQ sweep"
+probe experiment set dockq --conclusion "Yes: 0.7 scores 0.71 DockQ against 0.64 at 1.0, over 3 seeds each"
 ```
 
 <Warning>
-The question is **first-write-wins**. Reopening an experiment never rewrites it — an experiment whose question drifts to match its results has stopped being an experiment.
+Reopening an experiment never rewrites its question: `probe.init(question=...)` on an experiment that exists leaves the question alone. `probe experiment set --question` replaces it on purpose — use it to fix the wording, never to make the question match the results. An experiment whose question drifts to match its results has stopped being an experiment.
 </Warning>
+
+The **conclusion** is the answer, once the work gives one: what was found and the evidence for it, with both sides' numbers for a comparison. Change it when later work changes the answer; `--conclusion ""` clears it. An agent cannot overwrite a conclusion a person wrote.
 
 If you cannot write a question, you want a project-direct run instead. That is a legitimate shape, not a shortcut: work with no hypothesis has an honest home, and it is better than an experiment named after your working directory.
 
@@ -118,15 +130,17 @@ See [snapshots](/tracking/snapshots) for what those records contain.
 A group collects peer runs: a sweep, an ensemble, the ranks of one distributed job.
 
 ```bash
-GROUP=$(probe group create --name "lr sweep" --kind sweep --spec @search-space.json)
+GROUP=$(probe group create dockq --name "lr sweep" --kind sweep --spec @search-space.json)
 probe run start --experiment dockq --group $GROUP --name lr-3e-4
-probe group list --experiment dockq
+probe group list dockq
 probe notes append --experiment dockq --text "lr sweep: seed 3 diverged; excluded from the median"
 ```
 
+What the sweep tests goes in the experiment's notes, never in `--name`: the name is part of the group's identity within the experiment, so a description added to it makes a second group.
+
 ## Tags
 
-Tags are free-form labels. The same grammar works on projects, experiments, runs and papers.
+Tags are free-form labels. The same grammar works on projects, experiments, runs and papers (`probe project tag`, `probe experiment tag`, `probe run tag`, `probe paper tag`).
 
 ```bash
 probe run tag $RUN baseline reproduced     # add
@@ -139,26 +153,39 @@ Filtering by several tags is **AND**:
 
 ```bash
 probe run list --tag baseline --tag grpo
+probe project list --tag dockq
 ```
 
 ## Lineage
 
 ```bash
-probe edge add --from run:abc --to artifact:ckpt-7 --type produced
-probe edge remove --from run:abc --to artifact:ckpt-7
+probe edge add --source run:abc --relation produces --target artifact:<artifact-id> \
+  --reason "the eval script wrote this table"
+probe edge remove <edge-id>
 probe experiment edges dockq               # every edge under an experiment
 ```
 
-Edges connect runs, artifacts, artifact versions and papers. They are what make "what produced this checkpoint" answerable later.
+Edges connect runs, files, file versions, papers, sources, experiments and projects. They are what make "what produced this checkpoint" answerable later. `--source` and `--target` are `type:ref`; `--relation` is one of `consumes`, `produces`, `evaluates_on`, `promoted_to`, `derived_from`, `forked_from`, `resumed_from`, `retried_from`, `branched_from`, `discovered_via`, `supersedes`, `informed_by` or `relates_to`. Adding an edge that exists is not an error: it prints that edge's id.
+
+A wrong edge is fixed by removing it and adding the right one. `probe edge remove` takes the edge's id, which `probe edge add` prints and `probe experiment edges` lists as `id`.
+
+For what a run trained on or started from, record a use instead: see [datasets](/tracking/datasets#what-a-run-used).
 
 ## Deleting
 
 ```bash
+probe project delete folding --dry-run     # what would go, whose it is, when it last changed
 probe project delete folding
 probe experiment delete dockq
 probe run delete $RUN
 ```
 
+A delete **moves** the thing and everything under it to the trash: a project takes its experiments and runs with it, an experiment its runs, a run its telemetry. Trashed work disappears from every list, search and agent read, and a link to it says it is in the trash. `--dry-run` changes nothing and prints what would move.
+
 <Warning>
-Deletes are **permanent and irreversible**. There is no archive state and no recycle bin: a deleted project takes its experiments, runs, telemetry and artifacts with it. Deleting requires a credential with the `delete` scope.
+**Only Probe staff can restore from the trash**, for 21 days after the delete; then it is deleted for good. To get something back, email support@prbe.ai. There is no restore command or button.
+
+A project with live subprojects refuses to delete unless you pass `--recursive`. Deleting requires a credential with the `delete` scope.
 </Warning>
+
+Files are different: `probe artifact delete` does not use the trash and is permanent. See [artifacts](/tracking/artifacts#housekeeping).

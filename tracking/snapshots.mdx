@@ -20,10 +20,13 @@ run.snapshot()
 
 | Source | How it is stored |
 |---|---|
-| Files git can supply | The commit and blob hashes, plus the recorded remote — no bytes uploaded |
-| Files git cannot supply | Uploaded as per-file capture rows, deduplicated by SHA-256 across runs |
-| Environment | The virtualenv's resolved packages |
+| Every captured file up to `--reference-over-mb` | Its bytes, uploaded as per-file capture rows, deduplicated by SHA-256 across runs |
+| A file over `--reference-over-mb` | Its path, host and SHA-256, recorded where it lives instead of copied |
+| Git | The commit and remote, as provenance no byte depends on |
+| Environment | The project virtualenv's resolved packages |
 | Hardware | GPU model, count, driver |
+
+**The bytes are the record.** Files a pushed commit could supply are uploaded too: a git reference resolves only while the commit and its remote do, and a dead one looks exactly like a live one until someone tries to rebuild. Runs captured before this change may still hold git references; restore reads them from the recorded remote.
 
 ```bash
 probe snapshot $RUN \
@@ -36,11 +39,39 @@ probe snapshot $RUN \
 
 | Flag | Effect |
 |---|---|
-| `--include GLOB` | Also capture paths git ignores — datasets, checkpoints, out-of-tree configs |
+| `--include GLOB` | Also capture paths git ignores — datasets, checkpoints, out-of-tree configs. Wins over `.probeignore` and cache folders, never over a credential stop |
 | `--reference-over-mb N` | Above this, record where a file lives instead of copying it (default 100) |
 | `--max-upload-mb N` | **Refuse**, never truncate, above this size (default 256) |
 | `--no-env` / `--no-gpu` | Skip those rails |
-| `--no-upload` | Record the manifest only; store no bytes git cannot supply |
+| `--no-upload` | Record the manifest only; store no bytes. The run is then not reproducible from the record alone |
+
+## What it skips
+
+Capture leaves out what a rerun does not need, and reports what it skipped in the manifest:
+
+- **Folders that declare themselves a cache.** A folder holding a `CACHEDIR.TAG` file (the Cache Directory Tagging spec: cargo's `target/`, uv virtualenvs, Gradle and pytest caches) is skipped by the code snapshot, inside git or not, and by run-output capture. It is reported once as `generated`. Since CLI 0.270.0.
+- **Generated folders by name**, such as `.venv` and `node_modules`.
+- **Credentials.** Credential folders (`.ssh`, `.aws`, `.secrets`, ...), credential-shaped file names and files whose content holds a credential are withheld, whatever any other rule says.
+- **What your `.probeignore` names** (below).
+
+### `.probeignore`
+
+A `.probeignore` file in gitignore syntax tells Probe which paths not to capture:
+
+```text .probeignore
+data/
+checkpoints/
+*.jsonl
+!configs/small.jsonl
+```
+
+- **Where it is read:** at the git toplevel of the run's working directory, or the working directory itself outside a repo. Only that one file; a `.probeignore` in a subfolder is not read.
+- **More patterns:** `PROBE_IGNORE` (one per line or comma-separated) and `probe.init(ignore=[...])` add to it.
+- **What it covers:** code capture, run-output capture and read capture. An excluded read is never recorded or hashed.
+- **It only excludes.** A file under an excluded folder stays out whatever a later `!` line says, as in git, and `!` never brings back a credential. What you name explicitly still wins: `run.log_artifact(...)` and `--include` / `include=` are not filtered.
+- **Under `probe exec`**, the code snapshot is taken before the child starts, so a child's own `ignore=` cannot change it: put those patterns in `.probeignore` or `PROBE_IGNORE` where the command is launched.
+
+No file, variable or argument means no patterns: nothing is excluded by `.probeignore` until you write one. The agent skill that instruments a script writes one before the first run in a folder, keeping the code, configs and build files a rerun needs and leaving out build output, caches, data, checkpoints and earlier runs' outputs.
 
 ## Storage layout
 
@@ -59,7 +90,7 @@ probe snapshot-show $RUN
 probe snapshot-show $RUN --pending-only
 ```
 
-One file per line. `git` files are retrievable with `git cat-file blob <blob>` from the recorded remote; `blob` files are the ones git cannot supply.
+One file per line. `blob` files are stored by Probe, as capture rows or in a `code-bytes` archive. `git` files appear only on runs captured while git referencing existed, and are retrievable with `git cat-file blob <blob>` from the recorded remote.
 
 <Warning>
 The manifest's `n_pending_upload` is a **classification** count — "git cannot supply this, someone must upload it" — frozen into the execution record at capture time, *before* the upload it is counting. It is not work-remaining. `--pending-only` reconciles against what the upload actually did and reports what is genuinely unavailable.
@@ -72,12 +103,12 @@ probe snapshot-restore $RUN ./rebuilt
 probe snapshot-restore $RUN --verify-only
 ```
 
-Files git can supply are fetched from the recorded remote; the rest come from the run's per-file capture rows, then from its `code-bytes` archive when one exists.
+Files come from the run's per-file capture rows, then from its `code-bytes` archive when one exists. On an older run that recorded git references, those files are fetched from the recorded remote.
 
 **Every file is verified against the SHA-256 the manifest recorded.** A mismatch is reported unavailable and never written, so restore cannot hand back a tree that only looks right. It exits non-zero if any file could not be produced.
 
 <Warning>
-**A recorded git ref is only useful where that ref resolves.** A commit on a branch that was never pushed, or a remote the reader cannot reach, restores nothing — the uploaded bytes are what actually rebuilds the tree. If reproducibility outside your machine matters, push the commit, or capture with `--include` so the bytes travel.
+**What was not captured cannot be restored.** A file over `--reference-over-mb` is recorded by path and host, so it rebuilds only where that path still holds the same bytes; a run captured with `--no-upload` has no bytes at all; and an older run's git references resolve only while the commit and its remote do. Capture with `--include` when a file must travel with the run.
 </Warning>
 
 ## Is this run actually reproducible?

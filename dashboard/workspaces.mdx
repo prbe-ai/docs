@@ -1,12 +1,12 @@
 ---
 title: "Workspaces, team and settings"
-description: "Shelves for projects, who may edit what, members, devices and account settings."
+description: "Shelves for projects, each computer's workspace, who may edit what, members, devices, AI agents and settings."
 icon: "users"
 ---
 
 ## Workspaces
 
-A workspace is a place to file projects and files. **Not an ownership boundary** — every member of the team reads every workspace, and that is the product decision, not an omission.
+A workspace is a place to file projects. **Not an ownership boundary** — every member of the team reads every workspace, and that is the product decision, not an omission.
 
 `/workspaces` is a flat alphabetical list: workspace name, project count. Selecting a row switches to that workspace and opens its Projects view; the gear beside it opens its settings without navigating.
 
@@ -14,17 +14,30 @@ A workspace is a place to file projects and files. **Not an ownership boundary**
 probe workspace list
 probe workspace create engineering
 probe workspace rename engineering "Engineering"
-probe workspace use engineering
+probe workspace use engineering           # this computer's new projects go here
 probe workspace delete old-imports        # must be empty
 ```
 
-Any member can rename any workspace. Any **empty** workspace can be deleted, with confirmation — move projects and files out first.
+Any member can rename any workspace. Any **empty** workspace can be deleted, with confirmation — move its projects out first.
 
 <Note>
-Your workspace selection persists. A missing selection falls back to the oldest workspace by creation time, or **All** when none exist. The server creates a generic default only when a write needs one and none remain — deleting the last workspace does not itself create one.
+Your workspace selection in the dashboard persists. A missing selection falls back to the oldest workspace by creation time, or **All** when none exist. The server creates a generic default only when a write needs one and none remain — deleting the last workspace does not itself create one.
 
 Subprojects inherit their parent's workspace. An explicit destination is validated, never silently replaced with the default.
 </Note>
+
+## Each computer's workspace
+
+New projects made on a computer go into **that computer's workspace** — for the CLI, the [Probe daemon](/agents/daemon) and SDK runs alike. The setup wizard asks "Where should this computer's work go?" during install. Change it any time:
+
+```bash
+probe workspace use engineering     # where this computer's new projects go
+probe workspace use --clear         # unset it
+```
+
+`PROBE_WORKSPACE`, or `workspace=` in `probe.init`, overrides it for one process or call.
+
+When a new project names no workspace, a team with exactly one workspace files it there. With several, the server refuses with `workspace_required` rather than guessing. The SDK raises `WorkspaceRequired`; set this computer's workspace and run again. Subprojects need no workspace: they go where their parent is.
 
 ## Who may edit
 
@@ -39,13 +52,15 @@ Writers are named by **access group** — a named set of people, so the list is 
 
 ```bash
 probe access-group create reviewers
-probe access-group add reviewers <user-id>
+probe access-group add <group-id> <user-id>
 probe access-group list
 
-probe workspace writers <slug>                      # who may edit
-probe workspace writers <slug> --set reviewers      # restrict
-probe workspace writers <slug> --open               # back to open
+probe workspace writers show <slug>                     # who may edit
+probe workspace writers set <slug> --group <group-id>   # restrict
+probe workspace writers set <slug> --open               # back to open
 ```
+
+`writers set` replaces the whole write state in one call, so two admins editing at once cannot interleave into a state neither asked for. Restricting with no writers at all is allowed and means nobody may edit.
 
 A workspace can be **born restricted** in one call rather than in two with a window between them.
 
@@ -65,13 +80,17 @@ Revoking a teammate's API token is a dashboard action — `probe token revoke` o
 
 ## Settings
 
-`/settings` carries account preferences and **devices** — every machine holding a credential for this account, with what it is paired for. That is where a lost laptop is de-authorised.
+`/settings` has three sections:
+
+- **Devices** — every machine holding a credential for this account, with what it is paired for and whether it captures sessions. That is where a lost laptop is de-authorised.
+- **AI agents** — every coding agent you connected through [agent sign-in](/cli/auth#agent-sign-in), with when it connected and was last used. **Revoke** cuts one off.
+- **Preferences** — per-person choices, such as **Workspace canvas**, which turns the [canvas](/dashboard/overview#the-workspace-canvas) on Projects on or off for you.
 
 Workspace management deliberately lives in its own place rather than under Settings, because the two get confused: Settings is about *you and your devices*, `/workspaces` is about *where work is filed*.
 
 ## Onboarding
 
-A new team's first workspace is created in browser onboarding rather than at team creation, so the first named workspace is the oldest implicit destination for anything that does not say where it belongs. Joining an empty team still gets a generic fallback.
+Browser onboarding creates your first workspace: a team's creator sets one up before installing, and an invited member creates one after joining. Nothing is filed by age — work goes where each computer's workspace says, as above. Joining a team with no workspace at all still gets a generic fallback.
 
 ## Privacy and terms
 

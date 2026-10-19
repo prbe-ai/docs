@@ -27,7 +27,7 @@ probe wizard [AUTH_CODE] [OPTIONS]
 | `--uninstall` | When turning capture off, also remove the plugin (default: keep it) |
 | `--action <name>` | Skip the menu — see below |
 | `--folder <path>` | Backfill only: the folder to import, skipping the picker. Required headless |
-| `--who-records agent\|daemon` | Who records, for every coding agent on this device: the agent itself, or the Probe daemon (paid plans). Implies `--action recorder`; needs a signed-in device |
+| `--who-records agent\|daemon` | Who records, for every coding agent on this device: the agent itself, or [the Probe daemon](/agents/daemon), open to every team. Implies `--action recorder`; needs a signed-in device |
 | `-y`, `--yes` | Skip the menu and prompts |
 
 ### Signing in only
@@ -53,6 +53,7 @@ With `--action login`, these sign the device in and do **nothing else** — no p
 | `account` | The account screen: switch to or remove another saved account |
 | `login` / `logout` | Sign in (only — see above) / sign out, without the menu |
 | `recorder` | Who records; with `--who-records`, switches it |
+| `defaults` | Probe in new sessions: what a new session starts at (`on`, `read` or `off`) |
 | `settings` | The settings screen |
 | `uninstall` | Remove Probe from this device |
 | `import-research` | The import offer: sessions, a folder, or both |

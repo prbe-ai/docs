@@ -14,7 +14,7 @@ Claude Code, Codex, pi and Kimi Code sessions are captured live on this device b
 
 <CardGroup cols={2}>
   <Card title="Sent" icon="upload">
-    - Your prompts
+    - Your prompts, and the images you paste into them
     - The assistant's replies
     - The shell commands you run
   </Card>
@@ -25,6 +25,10 @@ Claude Code, Codex, pi and Kimi Code sessions are captured live on this device b
 </CardGroup>
 
 **Captured sessions are visible to your whole team.**
+
+Images you paste upload **unscanned**: a screenshot that shows a credential is uploaded with it. Turn that off in the wizard's **Settings → Upload images you paste**.
+
+Where [the Probe daemon](/agents/daemon) records, it can also have Claude Code and Codex write reasoning summaries for it. Those show in your terminal and upload with the session. The wizard's **Daemon sees the agent's reasoning** row turns them on or off.
 
 <Warning>
 Credential-shaped values are replaced before upload — but **that is a filter, not a guarantee.** Keep live credentials out of your prompts. A secret pasted into a conversation is a secret you should rotate, whether or not the filter caught it.
@@ -39,19 +43,20 @@ Capture is **per-device**, and it is disclosed twice before it starts: once on t
 <Tabs>
   <Tab title="The wizard">
     ```bash
-    npx probe-research          # → Settings → Session capture
+    npx probe-research          # → Uninstall Probe
     ```
 
-    Unticking it stops the upload immediately and unpairs this device's capture credential. The tracking plugin stays installed.
+    The wizard installs Probe whole and removes it whole, so its Settings screen has no capture row. **Uninstall Probe** stops capture along with everything else. To turn capture off and keep the rest, use the command.
   </Tab>
 
   <Tab title="Command">
     ```bash
     probe wizard --no-capture --yes
     probe wizard --no-capture --uninstall --yes    # also remove the tap plugin
+    probe wizard --agent codex --no-capture --yes  # one agent only
     ```
 
-    `--uninstall` is off by default: turning capture off keeps the plugin unless you say otherwise.
+    Turning capture off stops the upload immediately and unpairs this device's capture credential. The tracking plugin stays installed. `--uninstall` is off by default: turning capture off keeps the plugin unless you say otherwise.
   </Tab>
 
   <Tab title="Just this conversation">
@@ -71,7 +76,7 @@ Capture is **per-device**, and it is disclosed twice before it starts: once on t
 
 Turning capture off writes a killswitch alongside clearing the credential. It is what guarantees a daemon that is already running stops, independent of whether the teardown of the credential file succeeded.
 
-A device in that state reports `off (killswitch set)` in the wizard summary and in `probe doctor`. Settings will not silently override it.
+A device in that state reports `off (killswitch set)` in the wizard summary and in `probe doctor`. The wizard will not silently override it.
 
 ## Three places a credential can come from
 
@@ -142,6 +147,8 @@ The killswitch works here as well: a `.disabled` file in Capy's capture folder s
 They become documents in the team knowledgebase, searchable by meaning alongside runs, notes and papers, and readable as entities through the MCP `transcript` view.
 
 In the dashboard a session has its own page with its transcript and digest, and can be attributed to a run — which is what keeps "why was this launched" answerable months later.
+
+A Claude Code session is named by the title Claude Code gave it (the terminal tab's title; a `/rename` wins), from capture tap 0.9.20. A session with no title yet, or from another agent, is named by its agent and start time.
 
 Each agent's sessions carry their own document-type prefix (`claude_code.*`, `codex.*`, `pi.*`), and the bare token `session` spans all three.
 
