@@ -4,7 +4,7 @@
   "name": "Probe Research",
   "colors": {
     "primary": "#1b1c1a",
-    "light": "#eceae2",
+    "light": "#faf9f5",
     "dark": "#1b1c1a"
   },
   "appearance": {
@@ -13,7 +13,7 @@
   },
   "background": {
     "color": {
-      "light": "#f6f5f1",
+      "light": "#faf9f5",
       "dark": "#000000"
     }
   },

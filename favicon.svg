@@ -10,9 +10,9 @@
   <defs>
     <style>
       .st-bg { fill: #0a0a0a; }
-      .st-fg { fill: #e8e8e8; }
+      .st-fg { fill: #faf9f5; }
       @media (prefers-color-scheme: dark) {
-        .st-bg { fill: #e8e8e8; }
+        .st-bg { fill: #faf9f5; }
         .st-fg { fill: #0a0a0a; }
       }
     </style>
