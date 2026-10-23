@@ -155,6 +155,10 @@ Auto-update is on by default and runs in the background at session start.
 `probe doctor`'s last line matters more than the version numbers: a detached auto-updater that has been failing silently is otherwise invisible.
 </Note>
 
+## Sending a debug log
+
+If Probe misbehaves, send the Probe team a debug log: **Installation → Repair and diagnostics → Send log** in the app, or `probe doctor --bundle --send` in a terminal. It holds Probe's logs, the settings of Probe and your coding agents, and system details; passwords, keys and conversations are left out. You get an ID to quote when you write to us. `probe doctor --bundle` alone saves the file without sending it, so you can look first.
+
 ## Removing it
 
 <Tabs>

@@ -105,9 +105,11 @@ Capy runs in the cloud, so its variables live in two places: `PROBE_CAPY` on the
 
 | Variable | Purpose |
 |---|---|
-| `PROBE_DIAGNOSTICS` | Extra diagnostic output |
-| `PROBE_TELEMETRY` / `PROBE_TELEMETRY_HOST` | Client telemetry, and where it goes |
+| `PROBE_DIAGNOSTICS` | Extra diagnostic output. `off` also stops automatic diagnostic reports |
+| `PROBE_TELEMETRY` / `PROBE_TELEMETRY_HOST` | Client telemetry, and where it goes. `off` also stops automatic diagnostic reports |
 | `PROBE_VERSION_CACHE` / `PROBE_VERSION_TTL` / `PROBE_VERSION_TIMEOUT` | Version-manifest caching for update checks |
+
+When the Probe service sees part of Probe failing on your machine (a session it can't record, a daemon that keeps crashing, an update it had to roll back), it sends the Probe team a short diagnostic report: Probe's own versions, states and log lines, with credentials and home paths scrubbed and no conversation content. `PROBE_TELEMETRY=off` or `PROBE_DIAGNOSTICS=off` stops these, and a self-hosted backend never gets them. `probe doctor --send` sends one on purpose, and `probe doctor --bundle --send` (the app's **Send log**) sends a full debug log; both are sent only when you ask.
 
 ## Also read
 
